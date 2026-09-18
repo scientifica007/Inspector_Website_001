@@ -1,40 +1,32 @@
 # CHANGELOG
 
-## 2026-09-18 — Gate 4 Inspector Field Workflow
-
-### Added
-- Stable inspection snapshot materialization at visit creation.
-- Snapshot metadata for dynamic specifications and item guidance.
-- Recursive visit navigation.
-- Dynamic input support for all V1 field types.
-- Five-state checklist editing.
-- Item observations.
-- Node-level observations and recommendations.
-- General observations and recommendations.
-- Progress indicator.
-- Explicit completion confirmation and completed-visit edit lock.
-- Admin read-only viewing of inspectors' visits.
-- RTL/mobile field workflow.
-
-### Verification
-- Migration drift check: PASS.
-- Django system check: PASS.
-- Migrations: PASS.
-- Automated tests: 33/33 PASS.
-- Push CI: 35335170791.
-- PR CI: 35335189021.
-
-### Project control
-- Gate 4 branch: `gate-4/inspector-field-workflow`
-- Gate 4 PR: #9
-- Gate 4 issue: #8
+## 2026-09-18 — Gate 5 Local Additions / Governance / Version Publishing
+- Local Node / Specification / Checklist Item additions inside active visits.
+- Immediate field use plus PENDING Proposal generation.
+- Stable logical UUIDs across MasterVersion clones.
+- Admin Proposal Inbox.
+- Edit-before-approve, approve, reject, and institution merge.
+- Dependency handling for nested local branches.
+- Idempotent proposal resolution.
+- Master publish confirmation and previous-version archival.
+- Rejected institutions hidden from future selection without rewriting old visits.
+- 46/46 automated tests PASS.
+- Push CI: 35336056642.
+- PR CI: 35336070086.
 
 ### Next
-Gate 5 — local additions, Proposal Inbox moderation, and version publish workflow.
+Gate 6 — JSON export, QA fixtures and pilot readiness.
 
 ---
 
+## 2026-09-18 — Gate 4 Inspector Field Workflow
+- Stable visit snapshot materialization.
+- Dynamic fields, five checklist states, observations/recommendations, progress and completion lock.
+- 33/33 tests PASS.
+- PR #9 merged as `b506095d4e5856b2016759962be94440c7536202`.
+
 ## 2026-09-18 — Gate 3 Admin Builder
+- Recursive Admin Builder and preview.
 - 23/23 tests PASS.
 - PR #7 merged as `e55a81c18451ab42eb8da33a34ba98db4efd6e3b`.
 
@@ -43,9 +35,8 @@ Gate 5 — local additions, Proposal Inbox moderation, and version publish workf
 - PR #5 merged as `afc42baee093f7b0904fa8a1bc1355eb11e09bef`.
 
 ## 2026-09-18 — Gate 1 Technical Spike
-- Django 5.2 LTS + PostgreSQL + Django Templates selected.
+- Django 5.2 LTS + PostgreSQL + Django Templates.
 - PR #3 merged as `bac6caaf1b45ddc23f6a50155136ee5a63c66c0c`.
 
 ## 2026-09-18 — Foundation v0.1
-- Project charter, domain model, architecture, workflows, delivery gates and decision log.
 - PR #1 merged as `9278700fcbf3113854e2bd0f553a5db051529d60`.
