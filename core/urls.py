@@ -1,5 +1,5 @@
 from django.urls import path
-from . import builder_views, governance_views, local_views, views
+from . import builder_views, export_views, governance_views, local_views, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -8,6 +8,7 @@ urlpatterns = [
     path("institutions/new/", views.institution_create, name="institution_create"),
     path("inspections/new/", views.inspection_create, name="inspection_create"),
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
+    path("inspections/<int:pk>/export.json", export_views.inspection_export, name="inspection_export"),
     path(
         "inspections/<int:inspection_pk>/nodes/<int:node_pk>/",
         views.inspection_node,
