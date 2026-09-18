@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin Builder · v{{ draft.number }}</p>
+    <h1>{{ title }}</h1>
+    {% if node %}<p class="hint">ضمن: {{ node.title }}</p>{% endif %}
+  </div>
+</section>
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+    <div class="actions">
+      <button class="primary" type="submit">حفظ</button>
+      {% if node %}
+        <a class="secondary button-link" href="{% url 'builder_node' node.pk %}">إلغاء</a>
+      {% else %}
+        <a class="secondary button-link" href="{% url 'builder_home' %}">إلغاء</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}
