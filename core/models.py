@@ -49,6 +49,25 @@ class FieldType(models.TextChoices):
     SINGLE_SELECT = "SINGLE_SELECT", "اختيار واحد"
     MULTI_SELECT = "MULTI_SELECT", "اختيار متعدد"
 
+class InspectionScopeMode(models.TextChoices):
+    LEGACY_FULL = "LEGACY_FULL", "نطاق تاريخي كامل"
+    SELECTIVE = "SELECTIVE", "نطاق انتقائي"
+
+class ScopeOrigin(models.TextChoices):
+    LEGACY = "LEGACY", "تاريخي"
+    MANUAL = "MANUAL", "اختيار المفتش"
+    GUIDE = "GUIDE", "دليل مقترح"
+    ASSIGNMENT = "ASSIGNMENT", "تكليف"
+    LOCAL = "LOCAL", "إضافة محلية"
+
+class ScopeState(models.TextChoices):
+    ACTIVE = "ACTIVE", "ضمن النطاق"
+    EXCLUDED = "EXCLUDED", "مستبعد"
+
+class ScopeRole(models.TextChoices):
+    SELECTED = "SELECTED", "مختار"
+    CONTEXT = "CONTEXT", "سياق بنيوي"
+
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     role = models.CharField(max_length=16, choices=Role.choices, default=Role.INSPECTOR)
@@ -131,6 +150,11 @@ class Inspection(models.Model):
     master_version = models.ForeignKey(MasterVersion, on_delete=models.PROTECT, related_name="inspections")
     visit_date = models.DateField()
     status = models.CharField(max_length=16, choices=InspectionStatus.choices, default=InspectionStatus.DRAFT)
+    scope_mode = models.CharField(
+        max_length=16,
+        choices=InspectionScopeMode.choices,
+        default=InspectionScopeMode.SELECTIVE,
+    )
     general_observations = models.TextField(blank=True)
     general_recommendations = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -146,9 +170,33 @@ class InspectionNode(models.Model):
     title_snapshot = models.CharField(max_length=255)
     description_snapshot = models.TextField(blank=True)
     sort_order_snapshot = models.PositiveIntegerField(default=0)
-    local_addition = models.BooleanField(default=False)
+    scope_origin = models.CharField(
+        max_length=16,
+        choices=ScopeOrigin.choices,
+        default=ScopeOrigin.MANUAL,
+    )
+    scope_state = models.CharField(
+        max_length=16,
+        choices=ScopeState.choices,
+        default=ScopeState.ACTIVE,
+    )
+    scope_role = models.CharField(
+        max_length=16,
+        choices=ScopeRole.choices,
+        default=ScopeRole.SELECTED,
+    )
+    scope_locked = models.BooleanField(default=False)
     additional_observations = models.TextField(blank=True)
     recommendations = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspection", "source_node"],
+                condition=models.Q(source_node__isnull=False),
+                name="uq_inspection_source_node",
+            ),
+        ]
 
 class SpecificationValue(models.Model):
     inspection_node = models.ForeignKey(
@@ -163,8 +211,28 @@ class SpecificationValue(models.Model):
     options_snapshot = models.JSONField(default=list, blank=True)
     help_text_snapshot = models.TextField(blank=True)
     value = models.JSONField(null=True, blank=True)
-    local_addition = models.BooleanField(default=False)
     sort_order_snapshot = models.PositiveIntegerField(default=0)
+    scope_origin = models.CharField(
+        max_length=16,
+        choices=ScopeOrigin.choices,
+        default=ScopeOrigin.MANUAL,
+    )
+    scope_state = models.CharField(
+        max_length=16,
+        choices=ScopeState.choices,
+        default=ScopeState.ACTIVE,
+    )
+    scope_locked = models.BooleanField(default=False)
+    completion_required = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspection_node", "source_specification"],
+                condition=models.Q(source_specification__isnull=False),
+                name="uq_inspection_node_source_spec",
+            ),
+        ]
 
 class InspectionItemResult(models.Model):
     inspection_node = models.ForeignKey(InspectionNode, on_delete=models.CASCADE, related_name="item_results")
@@ -173,8 +241,28 @@ class InspectionItemResult(models.Model):
     guidance_snapshot = models.TextField(blank=True)
     status = models.CharField(max_length=24, choices=ResultStatus.choices, default=ResultStatus.UNCHECKED)
     observation = models.TextField(blank=True)
-    local_addition = models.BooleanField(default=False)
     sort_order_snapshot = models.PositiveIntegerField(default=0)
+    scope_origin = models.CharField(
+        max_length=16,
+        choices=ScopeOrigin.choices,
+        default=ScopeOrigin.MANUAL,
+    )
+    scope_state = models.CharField(
+        max_length=16,
+        choices=ScopeState.choices,
+        default=ScopeState.ACTIVE,
+    )
+    scope_locked = models.BooleanField(default=False)
+    completion_required = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspection_node", "source_item"],
+                condition=models.Q(source_item__isnull=False),
+                name="uq_inspection_node_source_item",
+            ),
+        ]
 
 class Proposal(models.Model):
     proposal_type = models.CharField(max_length=24, choices=ProposalType.choices)
