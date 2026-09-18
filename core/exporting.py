@@ -1,6 +1,6 @@
-EXPORT_SCHEMA = "inspection-export-v1"
+EXPORT_SCHEMA = "inspection-export-v2"
 
-from .models import ProposalType
+from .models import ProposalType, ScopeOrigin
 
 def _proposal_index(inspection):
     index = {}
@@ -19,6 +19,18 @@ def _proposal_trace(index, proposal_type, local_id):
         "status": proposal.status,
         "resolution_data": proposal.resolution_data or {},
     }
+
+def _scope_payload(entry, *, include_role=False, include_completion=False):
+    payload = {
+        "origin": entry.scope_origin,
+        "state": entry.scope_state,
+        "locked": entry.scope_locked,
+    }
+    if include_role:
+        payload["role"] = entry.scope_role
+    if include_completion:
+        payload["completion_required"] = entry.completion_required
+    return payload
 
 def build_inspection_export(inspection):
     proposal_index = _proposal_index(inspection)
@@ -49,9 +61,9 @@ def build_inspection_export(inspection):
                 "options": list(spec.options_snapshot or []),
                 "help_text": spec.help_text_snapshot,
                 "value": spec.value,
-                "local_addition": spec.local_addition,
+                "scope": _scope_payload(spec, include_completion=True),
             }
-            if spec.local_addition:
+            if spec.scope_origin == ScopeOrigin.LOCAL:
                 payload["proposal"] = _proposal_trace(
                     proposal_index, ProposalType.SPECIFICATION, spec.id
                 )
@@ -70,9 +82,9 @@ def build_inspection_export(inspection):
                 "guidance": item.guidance_snapshot,
                 "status": item.status,
                 "observation": item.observation,
-                "local_addition": item.local_addition,
+                "scope": _scope_payload(item, include_completion=True),
             }
-            if item.local_addition:
+            if item.scope_origin == ScopeOrigin.LOCAL:
                 payload["proposal"] = _proposal_trace(
                     proposal_index, ProposalType.ITEM, item.id
                 )
@@ -85,14 +97,14 @@ def build_inspection_export(inspection):
             ),
             "title": node.title_snapshot,
             "description": node.description_snapshot,
-            "local_addition": node.local_addition,
+            "scope": _scope_payload(node, include_role=True),
             "specifications": specifications,
             "checklist_items": items,
             "additional_observations": node.additional_observations,
             "recommendations": node.recommendations,
             "children": [node_payload(child) for child in children.get(node.id, [])],
         }
-        if node.local_addition:
+        if node.scope_origin == ScopeOrigin.LOCAL:
             payload["proposal"] = _proposal_trace(
                 proposal_index, ProposalType.NODE, node.id
             )
@@ -104,6 +116,7 @@ def build_inspection_export(inspection):
             "id": inspection.id,
             "visit_date": inspection.visit_date.isoformat(),
             "status": inspection.status,
+            "scope_mode": inspection.scope_mode,
             "institution": {
                 "id": inspection.institution_id,
                 "name": inspection.institution.name,
