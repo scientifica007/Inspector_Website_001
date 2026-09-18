@@ -170,6 +170,7 @@ class ExportTests(TestCase):
         self.assertEqual(json.loads(complete_body)["inspection"]["status"], "COMPLETED")
 
 class DemoSeedTests(TestCase):
+    @override_settings(DEBUG=True)
     def test_seed_demo_creates_fictitious_pilot_data(self):
         out = StringIO()
         call_command(
@@ -187,6 +188,7 @@ class DemoSeedTests(TestCase):
         self.assertGreater(inspection.inspection_nodes.count(), 0)
         self.assertIn("Password was accepted but is not echoed.", out.getvalue())
 
+    @override_settings(DEBUG=True)
     def test_seed_demo_refuses_existing_project_data(self):
         Institution.objects.create(name="بيانات موجودة")
         with self.assertRaises(CommandError):
