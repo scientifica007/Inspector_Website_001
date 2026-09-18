@@ -16,6 +16,21 @@ def migrate_existing_scope(apps, schema_editor):
     InspectionItemResult.objects.filter(local_addition=False).update(scope_origin="LEGACY")
 
 
+def restore_local_addition(apps, schema_editor):
+    InspectionNode = apps.get_model("core", "InspectionNode")
+    SpecificationValue = apps.get_model("core", "SpecificationValue")
+    InspectionItemResult = apps.get_model("core", "InspectionItemResult")
+
+    InspectionNode.objects.update(local_addition=False)
+    InspectionNode.objects.filter(scope_origin="LOCAL").update(local_addition=True)
+
+    SpecificationValue.objects.update(local_addition=False)
+    SpecificationValue.objects.filter(scope_origin="LOCAL").update(local_addition=True)
+
+    InspectionItemResult.objects.update(local_addition=False)
+    InspectionItemResult.objects.filter(scope_origin="LOCAL").update(local_addition=True)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -141,7 +156,7 @@ class Migration(migrations.Migration):
             name="completion_required",
             field=models.BooleanField(default=False),
         ),
-        migrations.RunPython(migrate_existing_scope, migrations.RunPython.noop),
+        migrations.RunPython(migrate_existing_scope, restore_local_addition),
         migrations.RemoveField(
             model_name="inspectionnode",
             name="local_addition",
@@ -214,7 +229,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="inspectionnode",
             constraint=models.UniqueConstraint(
-                condition=models.Q(("source_node__isnull", False)),
+                condition=models.Q(source_node__isnull=False),
                 fields=("inspection", "source_node"),
                 name="uq_inspection_source_node",
             ),
@@ -222,7 +237,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="specificationvalue",
             constraint=models.UniqueConstraint(
-                condition=models.Q(("source_specification__isnull", False)),
+                condition=models.Q(source_specification__isnull=False),
                 fields=("inspection_node", "source_specification"),
                 name="uq_inspection_node_source_spec",
             ),
@@ -230,7 +245,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="inspectionitemresult",
             constraint=models.UniqueConstraint(
-                condition=models.Q(("source_item__isnull", False)),
+                condition=models.Q(source_item__isnull=False),
                 fields=("inspection_node", "source_item"),
                 name="uq_inspection_node_source_item",
             ),
