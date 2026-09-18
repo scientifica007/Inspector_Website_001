@@ -4,7 +4,7 @@
 <section class="page-head">
   <div>
     <p class="eyebrow"><a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a></p>
-    <h1>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}</h1>
+    <h1>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %} {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}</h1>
     {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
   </div>
   <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
@@ -72,6 +72,7 @@
   </section>
   {% endif %}
 
+  {% if node_notes_enabled %}
   <section class="card field-section">
     <h2>معاينات وتوصيات المجال</h2>
     <div class="field-grid">
@@ -87,6 +88,11 @@
       </div>
     </div>
   </section>
+  {% elif not specification_blocks and not item_blocks %}
+  <section class="card field-section">
+    <p class="hint">هذا العنصر موجود كسياق بنيوي فقط. اختر محتوى داخله من «إدارة نطاق الزيارة» أو انتقل إلى العنصر المختار تحته.</p>
+  </section>
+  {% endif %}
 
   {% if can_edit %}
   <div class="sticky-save">
