@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}إنهاء الزيارة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }}</p>
+    <h1>إنهاء الزيارة</h1>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">إلغاء</a>
+</section>
+<section class="card confirmation-card">
+  <p>بعد الإنهاء تصبح الزيارة للقراءة فقط.</p>
+  {% if unchecked %}
+    <p class="warning">يوجد {{ unchecked }} بندًا ما زال بحالة «غير مفحوص».</p>
+  {% endif %}
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    <label class="confirm-check">{{ form.confirm }} <span>{{ form.confirm.label }}</span></label>
+    {{ form.confirm.errors }}
+    <button class="primary" type="submit">تأكيد إنهاء الزيارة</button>
+  </form>
+</section>
+{% endblock %}

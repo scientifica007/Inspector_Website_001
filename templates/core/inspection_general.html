@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}المعاينات العامة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }}</p>
+    <h1>المعاينات والتوصيات العامة</h1>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
+</section>
+{% if not can_edit %}<section class="readonly-banner">عرض للقراءة فقط.</section>{% endif %}
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
+    {% endfor %}
+    {% if can_edit %}<button class="primary" type="submit">حفظ</button>{% endif %}
+  </form>
+</section>
+{% endblock %}

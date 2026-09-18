@@ -2,15 +2,19 @@
 
 موقع ويب عربي RTL لدعم التفتيش الميداني، مع مرجع قابل للهندسة من طرف Admin دون تعديل الكود لكل تغير في الواقع.
 
-## النواة
+## ما يعمل الآن
 
-- شجرة Recursive بلا مستويات ثابتة.
-- مواصفات ديناميكية لكل عنصر.
-- بنود تفتيش بخمس حالات: غير مفحوص / غير معني / مطابق / ملاحظة / غير مطابق.
-- Draft / Publish / Version لحماية تاريخ الزيارات.
-- إضافات المفتش محلية أولًا ثم Proposal للـAdmin.
-- حسابات Admin / Inspector وحفظ مركزي.
-- Mobile-first.
+- حسابات Admin / Inspector.
+- مؤسسات مع مراجعة الإضافات الميدانية.
+- إنشاء زيارة وربطها بآخر Master Version منشورة.
+- Snapshot مستقرة لكل زيارة.
+- شجرة Recursive للمجالات والفروع.
+- مواصفات ديناميكية: نص، نص طويل، عدد، تاريخ، نعم/لا، اختيار واحد ومتعدد.
+- بنود تفتيش بالحالات: غير مفحوص / غير معني / مطابق / ملاحظة / غير مطابق.
+- معاينات على مستوى البند والمجال والزيارة.
+- توصيات على مستوى المجال والزيارة.
+- Admin Builder لتشكيل المرجع.
+- RTL وMobile-first.
 
 ## Stack
 - Django 5.2 LTS
@@ -20,9 +24,9 @@
 
 ## الحالة
 
-Foundation + Gate 1 + Gate 2 مدمجة في `main`.
-Gate 3 — Admin Builder اجتازت CI بـ **23/23** اختبارًا وهي جاهزة للدمج.
-بعدها: Gate 4 — Inspector Field Workflow.
+Foundation + Gate 1 + Gate 2 + Gate 3 مدمجة في `main`.
+Gate 4 — Inspector Field Workflow اجتازت CI بـ **33/33** اختبارًا وهي جاهزة للدمج.
+بعدها: Gate 5 — Proposals + Versioning.
 
 ## وثائق المشروع
 - [Project Charter](docs/00-PROJECT-CHARTER.md)
@@ -38,5 +42,6 @@ Gate 3 — Admin Builder اجتازت CI بـ **23/23** اختبارًا وهي 
 - [Local Run](docs/10-LOCAL-RUN.md)
 - [Gate 2 Result](docs/11-GATE-2-RESULT.md)
 - [Gate 3 Result](docs/12-GATE-3-RESULT.md)
+- [Gate 4 Result](docs/13-GATE-4-RESULT.md)
 - [Current State](CURRENT-STATE.json)
 - [Changelog](CHANGELOG.md)

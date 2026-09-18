@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ inspection.institution.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">زيارة ميدانية · المرجع v{{ inspection.master_version.number }}</p>
+    <h1>{{ inspection.institution.name }}</h1>
+    <p class="hint">{{ inspection.visit_date }} · {{ inspection.get_status_display }}</p>
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'inspection_general' inspection.pk %}">المعاينات العامة</a>
+    {% if can_edit %}
+      <a class="primary button-link" href="{% url 'inspection_complete' inspection.pk %}">إنهاء الزيارة</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card inspection-progress">
+  <div class="progress-line">
+    <strong>التقدم</strong>
+    <span>{{ resolved_items }} / {{ total_items }} بندًا محسومًا</span>
+  </div>
+  <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}">
+    <span style="width:{{ progress }}%"></span>
+  </div>
+  <small>{{ progress }}%</small>
+</section>
+
+<section class="card inspection-tree-card">
+  <div class="section-title"><h2>مجالات الزيارة</h2></div>
+  {% if tree %}
+    <div class="tree-list">
+      {% for node, depth in tree %}
+        <a class="tree-row field-tree-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
+          <span class="tree-branch" aria-hidden="true">↳</span>
+          <span>
+            <strong>{{ node.title_snapshot }}</strong>
+            {% if node.description_snapshot %}<small>{{ node.description_snapshot|truncatechars:90 }}</small>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>لا توجد عناصر في نسخة هذه الزيارة.</p>
+  {% endif %}
+</section>
+
+{% if inspection.status == "COMPLETED" %}
+<section class="readonly-banner" role="status">الزيارة مكتملة. البيانات معروضة للقراءة فقط.</section>
+{% endif %}
+{% endblock %}

@@ -8,13 +8,13 @@
   {% if inspections %}
     <div class="list">
     {% for inspection in inspections %}
-      <article class="visit">
+      <a class="visit visit-link" href="{% url 'inspection_detail' inspection.pk %}">
         <div>
           <strong>{{ inspection.institution.name }}</strong>
           <small>{{ inspection.visit_date }} · المرجع v{{ inspection.master_version.number }}</small>
         </div>
         <span class="badge">{{ inspection.get_status_display }}</span>
-      </article>
+      </a>
     {% endfor %}
     </div>
   {% else %}
