@@ -3,10 +3,10 @@
   "date": "2026-09-18",
   "repository": "scientifica007/Inspector_Website_001",
   "default_branch": "main",
-  "working_branch": "spike/gate-1-django",
+  "working_branch": "gate-2/core-data-auth",
   "baseline_commit": "c7b551244b2c18846ffb24bed2089931c0b7807a",
-  "phase": "TECHNICAL_SPIKE",
-  "gate": "GATE_1",
+  "phase": "CORE_DATA_AUTH",
+  "gate": "GATE_2",
   "status": "PASS_PENDING_MERGE",
   "implementation_started": true,
   "selected_stack": {
@@ -36,18 +36,23 @@
     "v1_output": "JSON"
   },
   "foundation_merge_commit": "9278700fcbf3113854e2bd0f553a5db051529d60",
-  "foundation_pr": 1,
-  "foundation_pr_state": "MERGED",
+  "gate_1_merge_commit": "bac6caaf1b45ddc23f6a50155136ee5a63c66c0c",
   "gate_1_issue": 2,
   "gate_1_pr": 3,
-  "gate_1_ci": {
-    "workflow_run_id": 35331698996,
+  "gate_2_issue": 4,
+  "gate_2_pr": 5,
+  "gate_2_ci": {
+    "workflow_run_id": 35332405047,
     "result": "PASS",
+    "migration_drift_check": "PASS",
     "django_check": "PASS",
-    "migrations": "PASS",
-    "tests": "PASS"
+    "migrate": "PASS",
+    "tests": {
+      "result": "PASS",
+      "count": 13
+    }
   },
-  "next_gate": "GATE_2_CORE_DATA_AUTH",
-  "next_action": "Merge Gate 1 after final readback, then create Gate 2 branch for production migrations, roles, institutions and inspection drafts.",
+  "next_gate": "GATE_3_ADMIN_BUILDER",
+  "next_action": "Merge Gate 2 after final readback, then build the narrow Admin Builder for recursive nodes, specifications and checklist items.",
   "blocked": false
 }
