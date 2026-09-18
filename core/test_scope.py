@@ -188,6 +188,59 @@ class SelectiveScopeCoreTests(TestCase):
             ScopeRole.CONTEXT,
         )
 
+
+    def test_context_node_is_navigable_for_selected_direct_item(self):
+        result = add_scope_item(self.inspection, self.child_item)
+        child_snapshot = self.inspection.inspection_nodes.get(source_node=self.child)
+        self.assertEqual(child_snapshot.scope_role, ScopeRole.CONTEXT)
+
+        self.client.login(username="scope-inspector", password="test-pass-123")
+        response = self.client.get(
+            reverse("inspection_node", args=[self.inspection.pk, child_snapshot.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "بند المصلحة")
+        self.assertFalse(response.context["node_notes_enabled"])
+
+        response = self.client.post(
+            reverse("inspection_node", args=[self.inspection.pk, child_snapshot.pk]),
+            {
+                f"status_{result.id}": ResultStatus.OBSERVATION,
+                f"observation_{result.id}": "ملاحظة من عنصر منفرد",
+            },
+        )
+        self.assertRedirects(
+            response,
+            reverse("inspection_node", args=[self.inspection.pk, child_snapshot.pk]),
+        )
+        result.refresh_from_db()
+        self.assertEqual(result.status, ResultStatus.OBSERVATION)
+        self.assertEqual(result.observation, "ملاحظة من عنصر منفرد")
+
+    def test_local_item_can_be_added_inside_context_node(self):
+        add_scope_item(self.inspection, self.child_item)
+        child_snapshot = self.inspection.inspection_nodes.get(source_node=self.child)
+        self.client.login(username="scope-inspector", password="test-pass-123")
+
+        response = self.client.post(
+            reverse("local_item_add", args=[self.inspection.pk, child_snapshot.pk]),
+            {"title": "بند محلي داخل السياق", "guidance": ""},
+        )
+        self.assertRedirects(
+            response,
+            reverse("inspection_node", args=[self.inspection.pk, child_snapshot.pk]),
+        )
+        local = child_snapshot.item_results.get(title_snapshot="بند محلي داخل السياق")
+        self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
+        self.assertEqual(
+            Proposal.objects.filter(
+                source_inspection=self.inspection,
+                proposal_type=ProposalType.ITEM,
+                source_local_id=local.id,
+            ).count(),
+            1,
+        )
+
     def test_locked_item_cannot_be_excluded(self):
         result = add_scope_item(
             self.inspection,
