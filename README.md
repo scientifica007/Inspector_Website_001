@@ -1,70 +1,42 @@
 # Inspector_Website_001
 
-موقع ويب عملي ومرن لدعم أعمال التفتيش الميداني، مع بنية قابلة للهندسة والتطوير من طرف Admin دون الحاجة إلى تعديل الكود لكل تغيير في الواقع التنظيمي أو المهني.
+موقع ويب عربي RTL لدعم التفتيش الميداني، مع مرجع قابل للهندسة من طرف Admin دون تعديل الكود لكل تغير في الواقع.
 
-## الرؤية
+## النواة
 
-النظام لا يفرض نموذجًا جامدًا على المفتش. بل يوفر:
-
-- بنية شجرية قابلة للتفريع بلا حد عملي: مجال ← تحت مجال ← فرع ← مصلحة...؛
-- مواصفات ديناميكية لكل عنصر هيكلي؛
-- بنود تفتيش قابلة للتقييم؛
-- معاينات وتوصيات على مستوى البند والمجال والزيارة؛
-- إضافة ميدانية فورية دون تعطيل العمل؛
-- مراجعة Admin للاقتراحات قبل تعميمها؛
-- Draft / Publish / Version لحماية تاريخ الزيارات؛
-- حفظ مركزي وحسابات للمفتشين؛
-- واجهة عربية RTL، Mobile-first، قابلة للعمل من الهاتف والحاسوب؛
-- تصدير منظم للبيانات لاستخدامه لاحقًا في إعداد التقارير بالذكاء الاصطناعي.
+- شجرة Recursive بلا مستويات ثابتة.
+- مواصفات ديناميكية لكل عنصر.
+- بنود تفتيش بخمس حالات: غير مفحوص / غير معني / مطابق / ملاحظة / غير مطابق.
+- Draft / Publish / Version لحماية تاريخ الزيارات.
+- إضافات المفتش محلية أولًا ثم Proposal للـAdmin.
+- حسابات Admin / Inspector وحفظ مركزي.
+- Mobile-first.
 
 ## Stack
-
 - Django 5.2 LTS
 - PostgreSQL في Production
 - Django Templates
-- HTMX مؤجل حتى تظهر حاجة تفاعلية محددة
+- HTMX مؤجل حتى تظهر حاجة محددة
 
-## الحالات القياسية للبند
+## الحالة
 
-- غير مفحوص `UNCHECKED`
-- غير معني `NOT_APPLICABLE`
-- مطابق `COMPLIANT`
-- ملاحظة `OBSERVATION`
-- غير مطابق `NON_COMPLIANT`
-
-> "غير معني" يعني أن البند لا ينطبق على الزيارة أو المؤسسة، بينما "غير مفحوص" يعني أنه ينطبق لكن لم يُحسم بعد.
-
-## مبادئ غير قابلة للكسر
-
-1. Admin يهندس المرجع؛ المفتش يستعمله ويقترح ما ينقص.
-2. التعديل على المرجع لا يعيد كتابة الزيارات القديمة.
-3. كل زيارة ترتبط بإصدار منشور محدد من المرجع.
-4. الإضافة الميدانية تستعمل فورًا في الزيارة، لكنها لا تصبح Master Content إلا بعد قرار Admin.
-5. العناصر المرجعية المستعملة تاريخيًا لا تُحذف فعليًا؛ تُعطّل.
-6. المحتوى المرجعي، بيانات الزيارة، والاقتراحات الميدانية طبقات منفصلة.
-7. V1 يركز على: Collect → Structure → Save → Export.
-
-## ما لن نبنيه في V1
-
-لا Android Native، لا GPS، لا صور/فيديو، لا توقيع إلكتروني، لا Workflow إداري ضخم، لا AI مدمج، لا توليد Word/PDF داخل الموقع، ولا Offline Sync معقد قبل إثبات الحاجة ميدانيًا.
+Foundation + Gate 1 + Gate 2 مدمجة في `main`.
+Gate 3 — Admin Builder اجتازت CI بـ **23/23** اختبارًا وهي جاهزة للدمج.
+بعدها: Gate 4 — Inspector Field Workflow.
 
 ## وثائق المشروع
-
-- [ميثاق المشروع](docs/00-PROJECT-CHARTER.md)
-- [نموذج المجال والبيانات](docs/01-DOMAIN-MODEL.md)
-- [المعمارية](docs/02-ARCHITECTURE.md)
+- [Project Charter](docs/00-PROJECT-CHARTER.md)
+- [Domain Model](docs/01-DOMAIN-MODEL.md)
+- [Architecture](docs/02-ARCHITECTURE.md)
 - [Admin Builder](docs/03-ADMIN-BUILDER.md)
-- [مسار المفتش](docs/04-INSPECTOR-WORKFLOW.md)
-- [خطة التنفيذ والبوابات](docs/05-DELIVERY-PLAN.md)
-- [ملاحظات البحث في المشاريع المشابهة](docs/06-RESEARCH-NOTES.md)
-- [سجل القرارات](docs/07-DECISIONS.md)
+- [Inspector Workflow](docs/04-INSPECTOR-WORKFLOW.md)
+- [Delivery Plan](docs/05-DELIVERY-PLAN.md)
+- [Research Notes](docs/06-RESEARCH-NOTES.md)
+- [Decision Log](docs/07-DECISIONS.md)
 - [Gate 1 Technical Spike](docs/08-TECHNICAL-SPIKE.md)
-- [قرار Stack](docs/09-STACK-DECISION.md)
-- [التشغيل المحلي](docs/10-LOCAL-RUN.md)
+- [Stack Decision](docs/09-STACK-DECISION.md)
+- [Local Run](docs/10-LOCAL-RUN.md)
 - [Gate 2 Result](docs/11-GATE-2-RESULT.md)
-- [الحالة الحالية](CURRENT-STATE.json)
-- [سجل التغييرات](CHANGELOG.md)
-
-## حالة المشروع
-
-Gate 2 اجتازت CI: 13 اختبارًا ناجحًا، migration drift check ناجح. الخطوة التالية بعد دمج PR #5 هي Gate 3: Admin Builder.
+- [Gate 3 Result](docs/12-GATE-3-RESULT.md)
+- [Current State](CURRENT-STATE.json)
+- [Changelog](CHANGELOG.md)
