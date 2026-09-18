@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import FieldType, Inspection, ResultStatus
+from .models import FieldType, Inspection, ResultStatus, ScopeState
 
 class InspectionNodeEntryForm(forms.Form):
     def __init__(self, *args, node, readonly=False, **kwargs):
@@ -8,10 +8,10 @@ class InspectionNodeEntryForm(forms.Form):
         self.node = node
         self.readonly = readonly
         self.spec_values = list(
-            node.specification_values.all().order_by("sort_order_snapshot", "id")
+            node.specification_values.filter(scope_state=ScopeState.ACTIVE).order_by("sort_order_snapshot", "id")
         )
         self.item_results = list(
-            node.item_results.all().order_by("sort_order_snapshot", "id")
+            node.item_results.filter(scope_state=ScopeState.ACTIVE).order_by("sort_order_snapshot", "id")
         )
 
         for spec in self.spec_values:
