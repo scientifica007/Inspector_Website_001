@@ -34,7 +34,7 @@
 يتضمن:
 - `id`
 - `visit_date`
-- `status`
+- `status` — قد يكون PENDING / APPROVED / REJECTED / MERGED / WITHDRAWN
 - `scope_mode`
 - `institution`
 - `inspector`

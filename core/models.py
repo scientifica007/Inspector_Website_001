@@ -28,11 +28,12 @@ class ProposalStatus(models.TextChoices):
     APPROVED = "APPROVED", "معتمد"
     REJECTED = "REJECTED", "مرفوض"
     MERGED = "MERGED", "مدمج"
+    WITHDRAWN = "WITHDRAWN", "مسحوب"
 
 class ProposalType(models.TextChoices):
     INSTITUTION = "INSTITUTION", "مؤسسة"
     NODE = "NODE", "عنصر هيكلي"
-    SPECIFICATION = "SPECIFICATION", "مواصفة"
+    SPECIFICATION = "SPECIFICATION", "وصف"
     ITEM = "ITEM", "بند"
 
 class InstitutionVerificationStatus(models.TextChoices):

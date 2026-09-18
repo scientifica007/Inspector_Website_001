@@ -31,6 +31,28 @@
   <a class="secondary button-link" href="{% url 'local_spec_add' inspection.pk node.pk %}">+ وصف</a>
   <a class="secondary button-link" href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
 </nav>
+
+<nav class="authoring-toolbar" aria-label="عمليات المجال">
+  {% if node.scope_origin == "LOCAL" %}
+    <a class="secondary button-link" href="{% url 'local_node_edit' inspection.pk node.pk %}">تعديل الفرع</a>
+    <a class="secondary button-link" href="{% url 'local_node_copy' inspection.pk node.pk %}">نسخ إلى...</a>
+    <a class="secondary button-link" href="{% url 'local_node_move' inspection.pk node.pk %}">نقل إلى...</a>
+    <form method="post" action="{% url 'local_node_duplicate' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">تكرار هنا</button>
+    </form>
+    <form method="post" action="{% url 'local_node_remove' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="danger-outline" type="submit">إخراج مع الحفظ</button>
+    </form>
+  {% else %}
+    <a class="secondary button-link" href="{% url 'local_node_copy' inspection.pk node.pk %}">نسخ كفرع محلي إلى...</a>
+    <form method="post" action="{% url 'local_node_duplicate' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">نسخ هنا كمحلي</button>
+    </form>
+  {% endif %}
+</nav>
 {% else %}
 <section class="readonly-banner" role="status">عرض التحضير للقراءة فقط.</section>
 {% endif %}
@@ -44,6 +66,7 @@
       <div class="prepare-list-row">
         <div>
           <strong>{{ child.title_snapshot }}</strong>
+          {% if child.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
           {% if child.description_snapshot %}<small class="hint">{{ child.description_snapshot }}</small>{% endif %}
         </div>
         <a class="secondary button-link" href="{% url 'inspection_node_prepare' inspection.pk child.pk %}">فتح الفرع</a>
@@ -58,7 +81,7 @@
     <h2>الأوصاف</h2>
     <div class="prepare-list">
       {% for description in descriptions %}
-      <div class="prepare-list-row">
+      <div class="prepare-list-row authoring-row">
         <div>
           <strong>{{ description.title_snapshot }}</strong>
           <div class="prepare-node-meta">
@@ -67,6 +90,25 @@
             {% if description.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
           </div>
         </div>
+        {% if can_edit %}
+        <div class="row-actions authoring-row-actions">
+          {% if description.scope_origin == "LOCAL" %}
+            <a href="{% url 'local_spec_edit' inspection.pk description.pk %}">تعديل</a>
+            <a href="{% url 'local_spec_move' inspection.pk description.pk %}">نقل</a>
+          {% endif %}
+          <a href="{% url 'local_spec_copy' inspection.pk description.pk %}">نسخ إلى...</a>
+          <form method="post" action="{% url 'local_spec_duplicate' inspection.pk description.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">تكرار هنا</button>
+          </form>
+          {% if description.scope_origin == "LOCAL" %}
+          <form method="post" action="{% url 'local_spec_remove' inspection.pk description.pk %}">
+            {% csrf_token %}
+            <button class="text-action danger-text" type="submit">إخراج</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -78,12 +120,31 @@
     <h2>بنود التفتيش</h2>
     <div class="prepare-list">
       {% for item in items %}
-      <div class="prepare-list-row">
+      <div class="prepare-list-row authoring-row">
         <div>
           <strong>{{ item.title_snapshot }}</strong>
           {% if item.guidance_snapshot %}<small class="hint">{{ item.guidance_snapshot }}</small>{% endif %}
           {% if item.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
         </div>
+        {% if can_edit %}
+        <div class="row-actions authoring-row-actions">
+          {% if item.scope_origin == "LOCAL" %}
+            <a href="{% url 'local_item_edit' inspection.pk item.pk %}">تعديل</a>
+            <a href="{% url 'local_item_move' inspection.pk item.pk %}">نقل</a>
+          {% endif %}
+          <a href="{% url 'local_item_copy' inspection.pk item.pk %}">نسخ إلى...</a>
+          <form method="post" action="{% url 'local_item_duplicate' inspection.pk item.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">تكرار هنا</button>
+          </form>
+          {% if item.scope_origin == "LOCAL" %}
+          <form method="post" action="{% url 'local_item_remove' inspection.pk item.pk %}">
+            {% csrf_token %}
+            <button class="text-action danger-text" type="submit">إخراج</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>

@@ -136,6 +136,40 @@ class ExportTests(TestCase):
         self.assertEqual(exported["proposal"]["proposal_id"], proposal.id)
         self.assertEqual(exported["proposal"]["status"], ProposalStatus.PENDING)
 
+    def test_local_export_uses_latest_proposal_for_same_snapshot(self):
+        local = InspectionItemResult.objects.create(
+            inspection_node=self.snap_root,
+            title_snapshot="بند متعدد الاقتراحات",
+            guidance_snapshot="",
+            scope_origin=ScopeOrigin.LOCAL,
+            sort_order_snapshot=100,
+        )
+        first = Proposal.objects.create(
+            proposal_type=ProposalType.ITEM,
+            source_inspection=self.inspection,
+            source_local_id=local.id,
+            proposed_by=self.inspector,
+            status=ProposalStatus.WITHDRAWN,
+            payload={"title": "صياغة أولى"},
+        )
+        latest = Proposal.objects.create(
+            proposal_type=ProposalType.ITEM,
+            source_inspection=self.inspection,
+            source_local_id=local.id,
+            proposed_by=self.inspector,
+            status=ProposalStatus.PENDING,
+            payload={"title": "صياغة حالية"},
+        )
+
+        items = build_inspection_export(self.inspection)["inspection"]["nodes"][0]["checklist_items"]
+        exported = next(
+            item for item in items if item["title"] == "بند متعدد الاقتراحات"
+        )
+
+        self.assertNotEqual(first.id, latest.id)
+        self.assertEqual(exported["proposal"]["proposal_id"], latest.id)
+        self.assertEqual(exported["proposal"]["status"], ProposalStatus.PENDING)
+
     def test_owner_and_admin_can_download_but_other_inspector_cannot(self):
         self.client.login(username="export-inspector", password="test-pass-123")
         owner_response = self.client.get(reverse("inspection_export", args=[self.inspection.pk]))

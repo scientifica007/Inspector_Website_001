@@ -11,6 +11,16 @@
 - Added field-state color affordances while preserving textual status labels.
 - Added bottom spacing to local-addition forms.
 
+### A-C2 — Local Authoring Operations
+- Draft owners can edit LOCAL branches, descriptions and checklist items during preparation.
+- Reference snapshots remain immutable; inspectors can copy them as independent LOCAL content.
+- Added duplicate-here, copy-to and move-to operations; branch copies recursively clone the active prepared subtree.
+- Copies carry design only: description values are empty and checklist results restart as UNCHECKED with empty observations.
+- Local removal is soft; removed content is listed separately and can be restored.
+- Pending proposals are updated in place on edit/move, withdrawn on removal, and re-proposed on restore.
+- Editing content after an already-resolved proposal creates a new PENDING proposal without rewriting the historical decision.
+- Added Proposal status WITHDRAWN and migration 0005.
+
 ### Changed
 - New visits start with an empty selective scope pinned to the current published Master.
 - The Master is treated as a reference library rather than a mandatory full-visit template.

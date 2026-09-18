@@ -12,6 +12,7 @@
     {% if can_edit %}
       <a class="primary button-link" href="{% url 'inspection_scope' inspection.pk %}">اختيار من المرجع</a>
       <a class="secondary button-link" href="{% url 'local_root_node_add' inspection.pk %}">+ عنصر محلي رئيسي</a>
+      <a class="secondary button-link" href="{% url 'local_removed_content' inspection.pk %}">المحتوى المستبعد</a>
     {% endif %}
   </div>
 </section>

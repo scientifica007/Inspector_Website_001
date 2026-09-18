@@ -186,3 +186,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .prepare-list-row{flex-direction:column}
   .local-actions a,.child-links a{width:100%}
 }
+
+
+/* A-C2 — local authoring operations */
+.authoring-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 16px}
+.authoring-toolbar form,.authoring-row-actions form,.removed-section form{margin:0}
+.authoring-row-actions{flex-wrap:wrap;justify-content:flex-end}
+.authoring-row-actions a{white-space:nowrap}
+.danger-text{color:#9d2f3b!important}
+.removed-section{margin-bottom:16px}
+.removed-section + .removed-section{margin-top:0}
+@media(max-width:700px){
+  .authoring-toolbar>*{flex:1 1 auto}
+  .authoring-toolbar form button{width:100%}
+  .authoring-row{align-items:flex-start}
+  .authoring-row-actions{width:100%;justify-content:flex-start}
+}

@@ -118,7 +118,7 @@ def approve_proposal(proposal, user, payload, note=""):
         )
     elif proposal.proposal_type == ProposalType.SPECIFICATION:
         if target is None:
-            raise ValidationError("المواصفة تحتاج إلى عنصر مرجعي مستهدف.")
+            raise ValidationError("الوصف يحتاج إلى عنصر مرجعي مستهدف.")
         obj = SpecificationDefinition.objects.create(
             node=target,
             title=payload["title"],

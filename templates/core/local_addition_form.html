@@ -8,7 +8,7 @@
       {% if node %} · {{ node.title_snapshot }}{% else %} · جذر الزيارة{% endif %}
     </p>
     <h1>{{ title }}</h1>
-    <p class="hint">تظهر الإضافة فورًا في هذه الزيارة، وتذهب إلى Admin كاقتراح قبل تعميمها.</p>
+    <p class="hint">{{ hint|default:"يظهر التغيير فورًا في هذه الزيارة ويُحفظ أثره في مسار الاقتراحات." }}</p>
   </div>
   {% if node %}
     <a class="secondary button-link" href="{% url 'inspection_node_prepare' inspection.pk node.pk %}">إلغاء</a>
@@ -28,7 +28,7 @@
         {{ field.errors }}
       </label>
     {% endfor %}
-    <button class="primary" type="submit">إضافة إلى الزيارة</button>
+    <button class="primary" type="submit">{{ button_label|default:"إضافة إلى الزيارة" }}</button>
   </form>
 </section>
 {% endblock %}
