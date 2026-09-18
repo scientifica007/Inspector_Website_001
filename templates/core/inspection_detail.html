@@ -38,13 +38,13 @@
     <div class="tree-list">
       {% for node, depth in tree %}
         {% if node.scope_role == "CONTEXT" %}
-          <div class="tree-row field-tree-row scope-context-row" style="--depth:{{ depth }}">
+          <a class="tree-row field-tree-row scope-context-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
             <span class="tree-branch" aria-hidden="true">↳</span>
             <span>
               <strong>{{ node.title_snapshot }}</strong>
-              <small>سياق بنيوي</small>
+              <small>سياق بنيوي · افتح للوصول إلى العناصر المختارة داخله</small>
             </span>
-          </div>
+          </a>
         {% else %}
           <a class="tree-row field-tree-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
             <span class="tree-branch" aria-hidden="true">↳</span>
