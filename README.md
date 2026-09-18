@@ -17,7 +17,7 @@
 - واجهة عربية RTL، Mobile-first، قابلة للعمل من الهاتف والحاسوب؛
 - تصدير منظم للبيانات لاستخدامه لاحقًا في إعداد التقارير بالذكاء الاصطناعي.
 
-## Stack المعتمد مبدئيًا بعد Gate 1
+## Stack
 
 - Django 5.2 LTS
 - PostgreSQL في Production
@@ -61,9 +61,10 @@
 - [Gate 1 Technical Spike](docs/08-TECHNICAL-SPIKE.md)
 - [قرار Stack](docs/09-STACK-DECISION.md)
 - [التشغيل المحلي](docs/10-LOCAL-RUN.md)
+- [Gate 2 Result](docs/11-GATE-2-RESULT.md)
 - [الحالة الحالية](CURRENT-STATE.json)
 - [سجل التغييرات](CHANGELOG.md)
 
 ## حالة المشروع
 
-Gate 1 اجتازت CI بنجاح. الخطوة التالية بعد دمج PR #3 هي Gate 2: Core Data & Authentication.
+Gate 2 اجتازت CI: 13 اختبارًا ناجحًا، migration drift check ناجح. الخطوة التالية بعد دمج PR #5 هي Gate 3: Admin Builder.

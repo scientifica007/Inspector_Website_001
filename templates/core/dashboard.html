@@ -2,7 +2,7 @@
 {% block content %}
 <section class="page-head">
   <div><p class="eyebrow">مساحة المفتش</p><h1>زياراتي</h1></div>
-  <button class="primary" type="button" disabled title="ضمن Gate لاحقة">+ زيارة جديدة</button>
+  <a class="primary button-link" href="{% url 'inspection_create' %}">+ زيارة جديدة</a>
 </section>
 <section class="card">
   {% if inspections %}

@@ -1,13 +1,15 @@
-name: Gate 1 Spike
+name: CI
 
 on:
   push:
-    branches: ["spike/gate-1-django"]
+    branches:
+      - "gate-*/*"
+      - "spike/*"
   pull_request:
     branches: ["main"]
 
 jobs:
-  django-spike:
+  django:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +18,8 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Create spike migration
-        run: python manage.py makemigrations core --noinput
+      - name: Verify committed migrations
+        run: python manage.py makemigrations --check --dry-run
       - name: Django system check
         run: python manage.py check
       - name: Apply migrations

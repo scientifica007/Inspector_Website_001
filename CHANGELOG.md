@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## 2026-09-18 — Gate 2 Core Data & Authentication
+
+### Added
+- Reproducible initial Django migration committed to the repository.
+- Automatic profile creation for new users.
+- Admin / Inspector role baseline.
+- Authenticated institution list and creation flow.
+- Inspector-added institutions remain private to the creator until Admin review.
+- Pending institution proposals for Admin moderation.
+- Inspection draft creation.
+- Automatic pinning to the latest published MasterVersion.
+- Dynamic SpecificationValue snapshots.
+- Server-side institution visibility rules.
+- Arabic RTL/mobile institution and inspection forms.
+
+### Verification
+- Migration drift check: PASS.
+- Django system check: PASS.
+- Migration apply: PASS.
+- Automated tests: 13/13 PASS.
+- GitHub Actions run: 35332405047.
+
+### Project control
+- Gate 2 branch: `gate-2/core-data-auth`
+- Gate 2 PR: #5
+- Gate 2 issue: #4
+
+### Next
+Gate 3 — narrow Admin Builder for recursive structure, specifications and checklist items.
+
+---
+
 ## 2026-09-18 — Gate 1 Technical Spike
 
 ### Validated
@@ -33,9 +65,6 @@
 - Gate 1 branch: `spike/gate-1-django`
 - Gate 1 PR: #3
 - Gate 1 tracking issue: #2
-
-### Next
-Gate 2 — production migrations, base roles/authorization, institutions and inspection draft foundation.
 
 ---
 
