@@ -1,8 +1,21 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="green">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script>
+    (function () {
+      const allowed = ["green", "blue", "purple", "orange"];
+      let theme = "green";
+      try {
+        const stored = localStorage.getItem("inspector-theme");
+        if (allowed.includes(stored)) theme = stored;
+      } catch (error) {
+        theme = "green";
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <title>{% block title %}منصة التفتيش{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
@@ -19,11 +32,24 @@
           <a href="{% url 'proposal_list' %}">الاقتراحات</a>
         {% endif %}
       </nav>
-      <form method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <button class="link-button" type="submit">خروج</button>
-      </form>
     {% endif %}
+    <div class="topbar-tools">
+      <label class="theme-control" for="theme-select">
+        <span>الثيمة</span>
+        <select id="theme-select" aria-label="اختيار ثيمة الواجهة">
+          <option value="green">الأخضر الرسمي</option>
+          <option value="blue">الأزرق المهني</option>
+          <option value="purple">البنفسجي الحديث</option>
+          <option value="orange">البرتقالي الدافئ</option>
+        </select>
+      </label>
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="link-button" type="submit">خروج</button>
+        </form>
+      {% endif %}
+    </div>
   </div>
 </header>
 <main class="container">
@@ -34,5 +60,27 @@
   {% endif %}
   {% block content %}{% endblock %}
 </main>
+<script>
+  (function () {
+    const select = document.getElementById("theme-select");
+    if (!select) return;
+
+    const allowed = ["green", "blue", "purple", "orange"];
+    const current = allowed.includes(document.documentElement.dataset.theme)
+      ? document.documentElement.dataset.theme
+      : "green";
+
+    select.value = current;
+    select.addEventListener("change", function () {
+      const theme = allowed.includes(select.value) ? select.value : "green";
+      document.documentElement.dataset.theme = theme;
+      try {
+        localStorage.setItem("inspector-theme", theme);
+      } catch (error) {
+        // Theme still applies for the current page even if storage is unavailable.
+      }
+    });
+  })();
+</script>
 </body>
 </html>
