@@ -14,7 +14,6 @@ from .models import (
     Proposal,
     ProposalType,
     ScopeOrigin,
-    ScopeRole,
     ScopeState,
     SpecificationValue,
 )
@@ -42,13 +41,12 @@ def _mark_selective(inspection):
         inspection.scope_mode = InspectionScopeMode.SELECTIVE
         inspection.save(update_fields=["scope_mode", "updated_at"])
 
-def _active_selected_node(inspection, node_pk):
+def _active_node(inspection, node_pk):
     return get_object_or_404(
         InspectionNode.objects.select_related("source_node"),
         pk=node_pk,
         inspection=inspection,
         scope_state=ScopeState.ACTIVE,
-        scope_role=ScopeRole.SELECTED,
     )
 
 @login_required
@@ -105,7 +103,7 @@ def local_root_node_add(request, inspection_pk):
 @login_required
 def local_node_add(request, inspection_pk, node_pk):
     inspection = _owned_editable_inspection(request, inspection_pk)
-    parent = _active_selected_node(inspection, node_pk)
+    parent = _active_node(inspection, node_pk)
     form = LocalNodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
@@ -147,7 +145,7 @@ def local_node_add(request, inspection_pk, node_pk):
 @login_required
 def local_specification_add(request, inspection_pk, node_pk):
     inspection = _owned_editable_inspection(request, inspection_pk)
-    node = _active_selected_node(inspection, node_pk)
+    node = _active_node(inspection, node_pk)
     form = LocalSpecificationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
@@ -192,7 +190,7 @@ def local_specification_add(request, inspection_pk, node_pk):
 @login_required
 def local_item_add(request, inspection_pk, node_pk):
     inspection = _owned_editable_inspection(request, inspection_pk)
-    node = _active_selected_node(inspection, node_pk)
+    node = _active_node(inspection, node_pk)
     form = LocalItemForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
