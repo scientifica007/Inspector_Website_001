@@ -14,6 +14,7 @@ from .models import (
     Proposal,
     ProposalType,
     ScopeOrigin,
+    ScopeRole,
     ScopeState,
     SpecificationValue,
 )
