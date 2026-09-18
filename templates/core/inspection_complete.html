@@ -10,11 +10,15 @@
 </section>
 <section class="card confirmation-card">
   <p>بعد الإنهاء تصبح الزيارة للقراءة فقط.</p>
+  {% if required_missing %}
+    <p class="error">يوجد {{ required_missing }} عنصرًا إلزاميًا غير محسوم؛ لا يمكن إنهاء الزيارة قبل استكماله.</p>
+  {% endif %}
   {% if unchecked %}
-    <p class="warning">يوجد {{ unchecked }} بندًا ما زال بحالة «غير مفحوص».</p>
+    <p class="warning">يوجد {{ unchecked }} بندًا ما زال بحالة «غير مفحوص» داخل النطاق الحالي.</p>
   {% endif %}
   <form method="post" class="stack-form">
     {% csrf_token %}
+    {{ form.non_field_errors }}
     <label class="confirm-check">{{ form.confirm }} <span>{{ form.confirm.label }}</span></label>
     {{ form.confirm.errors }}
     <button class="primary" type="submit">تأكيد إنهاء الزيارة</button>
