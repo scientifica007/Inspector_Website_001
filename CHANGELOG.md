@@ -21,8 +21,12 @@
 - Django system check: PASS.
 - Migrations: PASS.
 - Automated tests: 54/54 PASS.
-- Push CI: 35337239791.
-- PR CI: 35337242562.
+- Final push CI: 35337419494.
+- Final PR CI: 35337422182.
+
+### Project control
+- PR #13 merged as `c752d61a9431eb5f7594c61447182a71acef69b2`.
+- Frozen human-test candidate: `pilot/v0.1-rc1` at the same commit.
 
 ### Verdict
 TECHNICAL-PASS. Human desktop/mobile acceptance is still required before PILOT-READY.
