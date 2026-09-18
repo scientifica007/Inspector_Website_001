@@ -18,10 +18,8 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Show generated migration for review
-        run: python manage.py makemigrations core --dry-run --verbosity 3
-      - name: Create migration for temporary CI database
-        run: python manage.py makemigrations core --noinput
+      - name: Verify committed migrations
+        run: python manage.py makemigrations --check --dry-run
       - name: Django system check
         run: python manage.py check
       - name: Apply migrations
