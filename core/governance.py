@@ -19,6 +19,9 @@ from .services import create_draft_from_latest_published
 
 def _target_draft_node(proposal, draft):
     payload = proposal.payload or {}
+    if proposal.proposal_type == ProposalType.NODE and payload.get("target_root"):
+        return None
+
     stable_id = payload.get("target_node_stable_id")
     if stable_id:
         try:
@@ -114,6 +117,8 @@ def approve_proposal(proposal, user, payload, note=""):
             active=True,
         )
     elif proposal.proposal_type == ProposalType.SPECIFICATION:
+        if target is None:
+            raise ValidationError("المواصفة تحتاج إلى عنصر مرجعي مستهدف.")
         obj = SpecificationDefinition.objects.create(
             node=target,
             title=payload["title"],
@@ -125,6 +130,8 @@ def approve_proposal(proposal, user, payload, note=""):
             active=True,
         )
     elif proposal.proposal_type == ProposalType.ITEM:
+        if target is None:
+            raise ValidationError("بند التفتيش يحتاج إلى عنصر مرجعي مستهدف.")
         obj = ChecklistItem.objects.create(
             node=target,
             title=payload["title"],
