@@ -29,6 +29,10 @@
     "v1_output": "JSON"
   },
   "next_gate": "GATE_1_TECHNICAL_SPIKE",
-  "next_action": "Review and accept Foundation v0.1, then run a narrow technical spike to select the simplest production stack.",
-  "blocked": false
+  "next_action": "Review/accept Foundation PR #1. After merge, execute Issue #2 as a narrow Gate 1 technical spike.",
+  "blocked": false,
+  "foundation_commit": "984e663a3517d53ac77df23b25c225a6f9d74949",
+  "foundation_pr": 1,
+  "foundation_pr_state": "DRAFT_OPEN",
+  "next_gate_issue": 2
 }
