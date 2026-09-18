@@ -301,10 +301,11 @@ def inspection_node(request, inspection_pk, node_pk):
         inspection.inspection_nodes.all(),
         pk=node_pk,
     )
-    if node.scope_state != ScopeState.ACTIVE or node.scope_role != ScopeRole.SELECTED:
-        raise Http404("هذا العنصر ليس مجالًا نشطًا قابلًا للتعبئة في نطاق الزيارة.")
+    if node.scope_state != ScopeState.ACTIVE:
+        raise Http404("هذا العنصر خارج نطاق الزيارة الحالي.")
 
     editable = can_edit_inspection(request.user, inspection)
+    node_notes_enabled = node.scope_role == ScopeRole.SELECTED
 
     if request.method == "POST" and not editable:
         if inspection.status == InspectionStatus.COMPLETED:
@@ -315,6 +316,7 @@ def inspection_node(request, inspection_pk, node_pk):
         request.POST or None,
         node=node,
         readonly=not editable,
+        node_notes_enabled=node_notes_enabled,
     )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
@@ -332,6 +334,7 @@ def inspection_node(request, inspection_pk, node_pk):
             "specification_blocks": form.specification_blocks,
             "item_blocks": form.item_blocks,
             "can_edit": editable,
+            "node_notes_enabled": node_notes_enabled,
         },
     )
 
