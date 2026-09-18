@@ -92,6 +92,7 @@ def create_draft_from_latest_published():
         ).order_by("sort_order", "id")
         for old in source_nodes:
             new = StructureNode.objects.create(
+                stable_id=old.stable_id,
                 master_version=draft,
                 parent=new_parent,
                 title=old.title,
@@ -103,6 +104,7 @@ def create_draft_from_latest_published():
 
             for spec in old.specifications.all().order_by("sort_order", "id"):
                 SpecificationDefinition.objects.create(
+                    stable_id=spec.stable_id,
                     node=new,
                     title=spec.title,
                     field_type=spec.field_type,
@@ -115,6 +117,7 @@ def create_draft_from_latest_published():
 
             for item in old.items.all().order_by("sort_order", "id"):
                 ChecklistItem.objects.create(
+                    stable_id=item.stable_id,
                     node=new,
                     title=item.title,
                     guidance=item.guidance,

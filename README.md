@@ -3,17 +3,19 @@
 موقع ويب عربي RTL لدعم التفتيش الميداني، مع مرجع قابل للهندسة من طرف Admin دون تعديل الكود لكل تغير في الواقع.
 
 ## ما يعمل الآن
-
 - حسابات Admin / Inspector.
-- مؤسسات مع مراجعة الإضافات الميدانية.
-- إنشاء زيارة وربطها بآخر Master Version منشورة.
-- Snapshot مستقرة لكل زيارة.
-- شجرة Recursive للمجالات والفروع.
+- مؤسسات مع اقتراحات ميدانية ومراجعة Admin.
+- Admin Builder لشجرة Recursive.
+- Draft / Publish / Version.
+- Stable logical IDs بين الإصدارات.
+- إنشاء زيارة مرتبطة بإصدار منشور.
+- Snapshot مستقرة للزيارة.
 - مواصفات ديناميكية: نص، نص طويل، عدد، تاريخ، نعم/لا، اختيار واحد ومتعدد.
 - بنود تفتيش بالحالات: غير مفحوص / غير معني / مطابق / ملاحظة / غير مطابق.
-- معاينات على مستوى البند والمجال والزيارة.
-- توصيات على مستوى المجال والزيارة.
-- Admin Builder لتشكيل المرجع.
+- معاينات وتوصيات على مستوى البند والمجال والزيارة.
+- إضافة فرع / مواصفة / بند من الميدان فورًا.
+- Proposal Inbox: تعديل قبل الاعتماد / اعتماد / رفض / دمج مؤسسة.
+- نشر Master جديد دون إعادة كتابة الزيارات القديمة.
 - RTL وMobile-first.
 
 ## Stack
@@ -23,10 +25,9 @@
 - HTMX مؤجل حتى تظهر حاجة محددة
 
 ## الحالة
-
-Foundation + Gate 1 + Gate 2 + Gate 3 مدمجة في `main`.
-Gate 4 — Inspector Field Workflow اجتازت CI بـ **33/33** اختبارًا وهي جاهزة للدمج.
-بعدها: Gate 5 — Proposals + Versioning.
+Foundation + Gates 1–4 مدمجة في `main`.
+Gate 5 اجتازت CI بـ **46/46** اختبارًا وهي جاهزة للدمج.
+بعدها: Gate 6 — JSON export + QA/Pilot readiness.
 
 ## وثائق المشروع
 - [Project Charter](docs/00-PROJECT-CHARTER.md)
@@ -43,5 +44,6 @@ Gate 4 — Inspector Field Workflow اجتازت CI بـ **33/33** اختبار�
 - [Gate 2 Result](docs/11-GATE-2-RESULT.md)
 - [Gate 3 Result](docs/12-GATE-3-RESULT.md)
 - [Gate 4 Result](docs/13-GATE-4-RESULT.md)
+- [Gate 5 Result](docs/14-GATE-5-RESULT.md)
 - [Current State](CURRENT-STATE.json)
 - [Changelog](CHANGELOG.md)

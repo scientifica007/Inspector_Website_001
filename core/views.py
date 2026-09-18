@@ -41,7 +41,11 @@ def visible_institutions(user):
     if is_admin(user):
         return query
     return query.filter(
-        Q(verification_status=InstitutionVerificationStatus.VERIFIED) | Q(created_by=user)
+        Q(verification_status=InstitutionVerificationStatus.VERIFIED)
+        | Q(
+            created_by=user,
+            verification_status=InstitutionVerificationStatus.PENDING,
+        )
     )
 
 def inspection_for_user(user, pk):
@@ -88,6 +92,7 @@ def institution_create(request):
         if not admin_user:
             Proposal.objects.create(
                 proposal_type=ProposalType.INSTITUTION,
+                source_local_id=institution.id,
                 proposed_by=request.user,
                 payload={
                     "institution_id": institution.id,
