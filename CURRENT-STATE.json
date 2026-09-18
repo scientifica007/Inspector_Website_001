@@ -3,8 +3,8 @@
   "date": "2026-09-18",
   "repository": "scientifica007/Inspector_Website_001",
   "default_branch": "main",
-  "working_branch": "gate-6/export-pilot",
-  "phase": "EXPORT_PILOT_READINESS",
+  "working_branch": "pilot/v0.1-rc1",
+  "phase": "HUMAN_PILOT_ACCEPTANCE",
   "gate": "GATE_6",
   "status": "TECHNICAL_PASS_PENDING_HUMAN_ACCEPTANCE",
   "implementation_started": true,
@@ -34,6 +34,7 @@
   "gate_3_merge_commit": "e55a81c18451ab42eb8da33a34ba98db4efd6e3b",
   "gate_4_merge_commit": "b506095d4e5856b2016759962be94440c7536202",
   "gate_5_merge_commit": "25f3cbd2d94ab96de35ebd4d2cfdcd2fd959f53b",
+  "gate_6_merge_commit": "c752d61a9431eb5f7594c61447182a71acef69b2",
   "gate_6_issue": 12,
   "gate_6_pr": 13,
   "gate_6_ci": {
@@ -41,8 +42,8 @@
       "reason": "positive seed_demo test ran under Django test runner DEBUG=False",
       "corrected": true
     },
-    "push_workflow_run_id": 35337239791,
-    "pr_workflow_run_id": 35337242562,
+    "final_push_workflow_run_id": 35337419494,
+    "final_pr_workflow_run_id": 35337422182,
     "result": "PASS",
     "migration_drift_check": "PASS",
     "django_check": "PASS",
@@ -50,12 +51,16 @@
     "tests": {"result": "PASS","count": 54}
   },
   "export_schema": "inspection-export-v1",
+  "pilot_candidate": {
+    "branch": "pilot/v0.1-rc1",
+    "commit": "c752d61a9431eb5f7594c61447182a71acef69b2"
+  },
   "pilot_readiness": {
     "technical": "PASS",
     "human_browser_acceptance": "PENDING",
     "human_mobile_acceptance": "PENDING",
     "verdict": "NOT_YET_PILOT_READY"
   },
-  "next_action": "Merge Gate 6 technical implementation, then execute docs/15-PILOT-ACCEPTANCE.md on desktop and mobile before declaring PILOT-READY.",
+  "next_action": "Execute docs/15-PILOT-ACCEPTANCE.md against pilot/v0.1-rc1 on desktop and mobile; record defects before any further feature work.",
   "blocked": false
 }

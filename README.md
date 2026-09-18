@@ -40,8 +40,18 @@
 
 ## الحالة
 
-Foundation + Gates 1–5 مدمجة في `main`.
-Gate 6 اجتازت الاختبارات التقنية النهائية: **54/54 PASS**.
+Foundation + Gates 1–6 مدمجة في `main`.
+
+Gate 6 التقنية اجتازت:
+- migration drift check
+- Django system check
+- migrations
+- **54/54** اختبارًا آليًا
+
+Pilot candidate المثبت للاختبار البشري:
+
+- branch: `pilot/v0.1-rc1`
+- commit: `c752d61a9431eb5f7594c61447182a71acef69b2`
 
 الحالة الصحيحة حاليًا:
 
