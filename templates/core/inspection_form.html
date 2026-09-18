@@ -6,7 +6,7 @@
   {% if master_missing %}
     <p class="error">لا توجد نسخة منشورة من مرجع التفتيش. يجب على Admin نشر نسخة قبل إنشاء زيارة.</p>
   {% else %}
-    <p class="hint">سيتم ربط الزيارة بالمرجع المنشور v{{ master.number }}.</p>
+    <p class="hint">ستُربط الزيارة بالمرجع المنشور v{{ master.number }} كمصدر للاختيار. لن يفرض النظام محتوى المرجع كاملًا؛ تحدد نطاق الزيارة بعد إنشاء المسودة.</p>
     <form method="post" class="stack-form">
       {% csrf_token %}
       {{ form.non_field_errors }}
