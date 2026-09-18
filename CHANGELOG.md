@@ -25,5 +25,10 @@
 - Admin UI.
 - Inspector UI.
 
+### Project control
+- Foundation branch: `foundation/v0.1`
+- Draft PR: #1
+- Next-gate tracking issue: #2
+
 ### Next
-Gate 1 — narrow technical spike and stack decision.
+Review/accept Foundation PR #1, then execute Gate 1 — narrow technical spike and stack decision.
