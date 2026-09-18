@@ -2,6 +2,15 @@
 
 ## Unreleased — DC-SCOPE-02 Stage A: Selective Visit Scope Core
 
+### A-C1 — Workspace Separation & Navigation
+- Replaced the visit-list landing screen with a role-aware home workspace; visits now have a dedicated list route.
+- Split draft work into explicit preparation and field-execution workspaces without adding a visit mode.
+- Added hierarchical breadcrumbs and child navigation for visit nodes.
+- Inspector-facing “specification” terminology is now “description” (وصف/أوصاف) while internal model names remain unchanged.
+- Local authoring actions are presented as explicit buttons in preparation screens.
+- Added field-state color affordances while preserving textual status labels.
+- Added bottom spacing to local-addition forms.
+
 ### Changed
 - New visits start with an empty selective scope pinned to the current published Master.
 - The Master is treated as a reference library rather than a mandatory full-visit template.

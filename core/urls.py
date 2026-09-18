@@ -6,14 +6,22 @@ urlpatterns = [
     path("health/", views.health, name="health"),
     path("institutions/", views.institution_list, name="institution_list"),
     path("institutions/new/", views.institution_create, name="institution_create"),
+    path("inspections/", views.inspection_list, name="inspection_list"),
     path("inspections/new/", views.inspection_create, name="inspection_create"),
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
+    path("inspections/<int:pk>/prepare/", views.inspection_prepare, name="inspection_prepare"),
+    path("inspections/<int:pk>/execute/", views.inspection_execute, name="inspection_execute"),
     path("inspections/<int:pk>/scope/", views.inspection_scope, name="inspection_scope"),
     path("inspections/<int:pk>/export.json", export_views.inspection_export, name="inspection_export"),
     path(
         "inspections/<int:inspection_pk>/nodes/<int:node_pk>/",
         views.inspection_node,
         name="inspection_node",
+    ),
+    path(
+        "inspections/<int:inspection_pk>/nodes/<int:node_pk>/prepare/",
+        views.inspection_node_prepare,
+        name="inspection_node_prepare",
     ),
     path(
         "inspections/<int:pk>/general/",

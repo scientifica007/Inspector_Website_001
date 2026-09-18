@@ -7,7 +7,7 @@
     <h1>إدارة نطاق الزيارة</h1>
     <p class="hint">اختر فقط ما تحتاج إلى فحصه. المرجع مكتبة عمل، وليس قائمة مفروضة.</p>
   </div>
-  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
 </section>
 
 {% if not can_edit %}
@@ -16,7 +16,7 @@
 
 <section class="card scope-help">
   <strong>كيف يعمل النطاق؟</strong>
-  <p class="hint">يمكن إضافة فرع كامل، أو مواصفة واحدة، أو بند واحد. عند اختيار عنصر عميق تُضاف آباؤه كسياق بنيوي فقط. إخراج عنصر لا يحذف بياناته؛ ويمكن استعادته لاحقًا.</p>
+  <p class="hint">يمكن إضافة فرع كامل، أو وصف واحد، أو بند واحد. عند اختيار عنصر عميق تُضاف آباؤه كسياق بنيوي فقط. إخراج عنصر لا يحذف بياناته؛ ويمكن استعادته لاحقًا.</p>
 </section>
 
 <section class="scope-reference">
@@ -76,7 +76,7 @@
 
     {% if row.specifications %}
     <div class="scope-group">
-      <h3>المواصفات</h3>
+      <h3>الأوصاف</h3>
       {% for entry in row.specifications %}
       <div class="scope-entry">
         <div>

@@ -15,7 +15,7 @@ class LocalNodeForm(forms.Form):
     inspectable = forms.BooleanField(label="قابل للتفتيش مباشرة", required=False, initial=True)
 
 class LocalSpecificationForm(forms.Form):
-    title = forms.CharField(label="عنوان المواصفة", max_length=255)
+    title = forms.CharField(label="عنوان الوصف", max_length=255)
     field_type = forms.ChoiceField(label="نوع القيمة", choices=FieldType.choices)
     required = forms.BooleanField(label="إلزامية", required=False)
     options_text = forms.CharField(

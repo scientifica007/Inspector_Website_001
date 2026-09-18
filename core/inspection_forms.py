@@ -69,6 +69,7 @@ class InspectionNodeEntryForm(forms.Form):
                 choices=ResultStatus.choices,
                 initial=item.status,
                 disabled=readonly,
+                widget=forms.Select(attrs={"class": "status-select"}),
             )
             self.fields[f"observation_{item.id}"] = forms.CharField(
                 label="المعاينة / الملاحظة",

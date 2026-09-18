@@ -1,23 +1,30 @@
 {% extends "base.html" %}
 {% block title %}{{ node.title_snapshot }}{% endblock %}
 {% block content %}
+<nav class="breadcrumbs" aria-label="مسار المجال">
+  <a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a>
+  <span aria-hidden="true">←</span>
+  <a href="{% url 'inspection_execute' inspection.pk %}">تنفيذ الزيارة</a>
+  {% for crumb in breadcrumbs %}
+    <span aria-hidden="true">←</span>
+    {% if crumb.pk == node.pk %}
+      <span aria-current="page">{{ crumb.title_snapshot }}</span>
+    {% else %}
+      <a href="{% url 'inspection_node' inspection.pk crumb.pk %}">{{ crumb.title_snapshot }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
 <section class="page-head">
   <div>
-    <p class="eyebrow"><a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a></p>
+    <p class="eyebrow">تنفيذ الزيارة</p>
     <h1>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %} {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}</h1>
     {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
   </div>
-  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
+  <a class="secondary button-link" href="{% url 'inspection_execute' inspection.pk %}">العودة إلى التنفيذ</a>
 </section>
 
-{% if can_edit %}
-<nav class="local-additions" aria-label="إضافات ميدانية">
-  <span>إضافة ميدانية:</span>
-  <a href="{% url 'local_node_add' inspection.pk node.pk %}">+ فرع</a>
-  <a href="{% url 'local_spec_add' inspection.pk node.pk %}">+ مواصفة</a>
-  <a href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
-</nav>
-{% else %}
+{% if not can_edit %}
 <section class="readonly-banner" role="status">عرض للقراءة فقط.</section>
 {% endif %}
 
@@ -27,7 +34,7 @@
 
   {% if specification_blocks %}
   <section class="card field-section">
-    <h2>المواصفات</h2>
+    <h2>الأوصاف</h2>
     <div class="field-grid">
       {% for block in specification_blocks %}
       <div class="field-block">
@@ -101,4 +108,27 @@
   </div>
   {% endif %}
 </form>
+
+{% if children %}
+<section class="card child-navigation">
+  <h2>الفروع التابعة</h2>
+  <div class="child-links">
+    {% for child in children %}
+      <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk child.pk %}">{{ child.title_snapshot }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<script>
+  (function () {
+    document.querySelectorAll(".status-select").forEach(function (select) {
+      function syncStatus() {
+        select.dataset.status = select.value || "UNCHECKED";
+      }
+      syncStatus();
+      select.addEventListener("change", syncStatus);
+    });
+  })();
+</script>
 {% endblock %}

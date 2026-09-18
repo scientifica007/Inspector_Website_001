@@ -88,7 +88,7 @@ def local_root_node_add(request, inspection_pk):
             request,
             "أضيف العنصر المحلي الرئيسي إلى الزيارة وأرسل كاقتراح للإدارة.",
         )
-        return redirect("inspection_node", inspection_pk=inspection.pk, node_pk=local.pk)
+        return redirect("inspection_node_prepare", inspection_pk=inspection.pk, node_pk=local.pk)
 
     return render(
         request,
@@ -135,7 +135,7 @@ def local_node_add(request, inspection_pk, node_pk):
             )
             _mark_selective(inspection)
         messages.success(request, "أضيف الفرع إلى هذه الزيارة وأرسل كاقتراح للإدارة.")
-        return redirect("inspection_node", inspection_pk=inspection.pk, node_pk=local.pk)
+        return redirect("inspection_node_prepare", inspection_pk=inspection.pk, node_pk=local.pk)
 
     return render(
         request,
@@ -179,13 +179,13 @@ def local_specification_add(request, inspection_pk, node_pk):
                 payload=payload,
             )
             _mark_selective(inspection)
-        messages.success(request, "أضيفت المواصفة إلى الزيارة وأرسلت كاقتراح للإدارة.")
-        return redirect("inspection_node", inspection_pk=inspection.pk, node_pk=node.pk)
+        messages.success(request, "أضيف الوصف إلى الزيارة وأرسل كاقتراح للإدارة.")
+        return redirect("inspection_node_prepare", inspection_pk=inspection.pk, node_pk=node.pk)
 
     return render(
         request,
         "core/local_addition_form.html",
-        {"inspection": inspection, "node": node, "form": form, "title": "إضافة مواصفة محلية"},
+        {"inspection": inspection, "node": node, "form": form, "title": "إضافة وصف محلي"},
     )
 
 @login_required
@@ -219,7 +219,7 @@ def local_item_add(request, inspection_pk, node_pk):
             )
             _mark_selective(inspection)
         messages.success(request, "أضيف بند التفتيش إلى الزيارة وأرسل كاقتراح للإدارة.")
-        return redirect("inspection_node", inspection_pk=inspection.pk, node_pk=node.pk)
+        return redirect("inspection_node_prepare", inspection_pk=inspection.pk, node_pk=node.pk)
 
     return render(
         request,

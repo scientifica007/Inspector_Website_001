@@ -324,9 +324,9 @@ def add_scope_specification(
     completion_required=False,
 ):
     if source_specification.node.master_version_id != inspection.master_version_id:
-        raise ValidationError("المواصفة لا تنتمي إلى إصدار المرجع المثبت لهذه الزيارة.")
+        raise ValidationError("الوصف لا ينتمي إلى إصدار المرجع المثبت لهذه الزيارة.")
     if not source_specification.active:
-        raise ValidationError("لا يمكن اختيار مواصفة مرجعية غير نشطة.")
+        raise ValidationError("لا يمكن اختيار وصف مرجعي غير نشط.")
 
     node_snapshot = _activate_snapshot_node(
         inspection,
@@ -507,7 +507,7 @@ def exclude_scope_node(node):
             scope_state=ScopeState.ACTIVE,
             scope_locked=True,
         ).exists():
-            raise ValidationError("يتضمن هذا الفرع مواصفة مقيدة لا يمكن إخراجها من النطاق.")
+            raise ValidationError("يتضمن هذا الفرع وصفًا مقيدًا لا يمكن إخراجه من النطاق.")
         if candidate.item_results.filter(
             scope_state=ScopeState.ACTIVE,
             scope_locked=True,
@@ -534,7 +534,7 @@ def exclude_scope_specification(value):
     if value.scope_state == ScopeState.EXCLUDED:
         return False
     if value.scope_locked:
-        raise ValidationError("هذه المواصفة مقيدة ولا يمكن إخراجها من النطاق.")
+        raise ValidationError("هذا الوصف مقيد ولا يمكن إخراجه من النطاق.")
     value.scope_state = ScopeState.EXCLUDED
     value.save(update_fields=["scope_state"])
     _mark_selective(value.inspection_node.inspection)

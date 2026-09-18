@@ -91,7 +91,7 @@ class Gate5GovernanceTests(TestCase):
         local = self.inspection.inspection_nodes.get(title_snapshot="فرع ميداني")
         self.assertRedirects(
             response,
-            reverse("inspection_node", args=[self.inspection.pk, local.pk]),
+            reverse("inspection_node_prepare", args=[self.inspection.pk, local.pk]),
         )
         self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
         self.assertEqual(local.parent, self.snap_root)

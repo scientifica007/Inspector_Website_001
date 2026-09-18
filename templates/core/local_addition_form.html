@@ -11,9 +11,9 @@
     <p class="hint">تظهر الإضافة فورًا في هذه الزيارة، وتذهب إلى Admin كاقتراح قبل تعميمها.</p>
   </div>
   {% if node %}
-    <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk node.pk %}">إلغاء</a>
+    <a class="secondary button-link" href="{% url 'inspection_node_prepare' inspection.pk node.pk %}">إلغاء</a>
   {% else %}
-    <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">إلغاء</a>
+    <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">إلغاء</a>
   {% endif %}
 </section>
 <section class="card narrow-form">

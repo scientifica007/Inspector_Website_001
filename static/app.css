@@ -152,3 +152,37 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .scope-entry>div:last-child,.scope-entry>div:last-child form{width:100%}
   .scope-entry .text-action{width:100%;text-align:start;padding:5px 0}
 }
+
+
+/* A-C1 — workspace separation, navigation and field-state affordances */
+.narrow-form{margin-bottom:56px}
+.workspace-grid,.workflow-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding-bottom:48px}
+.workspace-card,.workflow-card{display:flex;gap:14px;align-items:flex-start;color:var(--theme-ink);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.workspace-card:hover,.workflow-card:hover{transform:translateY(-1px);box-shadow:0 12px 30px var(--theme-shadow)}
+.workspace-card{flex-direction:column}
+.workspace-card strong,.workflow-card strong{font-size:1.05rem}
+.workspace-card span,.workflow-card p,.workflow-card small{color:var(--theme-muted);margin:.35rem 0 0}
+.workspace-card-primary{border-color:var(--theme-soft-border);background:var(--theme-soft)}
+.workflow-step{display:inline-grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:999px;background:var(--theme-soft);color:var(--theme-accent-dark);font-weight:700}
+.breadcrumbs{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:18px 0 0;color:var(--theme-muted);font-size:.88rem}
+.breadcrumbs a{color:var(--theme-link);text-decoration:none}
+.local-actions{align-items:center}
+.local-actions a{min-width:92px}
+.prepare-summary{display:grid;gap:16px;padding-bottom:48px}
+.prepare-node-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.prepare-list{display:grid;gap:8px}
+.prepare-list-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--theme-border)}
+.prepare-list-row:last-child{border-bottom:0}
+.child-navigation{margin:0 0 92px}
+.child-links{display:flex;gap:10px;flex-wrap:wrap}
+.status-select{font-weight:700;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.status-select[data-status="COMPLIANT"]{background:#e8f6ee;border-color:#8bc7a3;color:#145b31}
+.status-select[data-status="NON_COMPLIANT"]{background:#fff0f1;border-color:#e2a4aa;color:#8a2630}
+.status-select[data-status="OBSERVATION"]{background:#fff6e5;border-color:#e6c77d;color:#7a5605}
+.status-select[data-status="NOT_APPLICABLE"]{background:#f1f3f5;border-color:#c8ced5;color:#58616b}
+.status-select[data-status="UNCHECKED"]{background:#fff;border-color:var(--theme-border);color:var(--theme-ink)}
+@media(max-width:700px){
+  .workspace-grid,.workflow-grid{grid-template-columns:1fr}
+  .prepare-list-row{flex-direction:column}
+  .local-actions a,.child-links a{width:100%}
+}

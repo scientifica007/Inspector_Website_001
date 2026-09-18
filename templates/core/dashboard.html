@@ -1,24 +1,38 @@
 {% extends "base.html" %}
+{% block title %}الرئيسية{% endblock %}
 {% block content %}
 <section class="page-head">
-  <div><p class="eyebrow">مساحة المفتش</p><h1>زياراتي</h1></div>
-  <a class="primary button-link" href="{% url 'inspection_create' %}">+ زيارة جديدة</a>
+  <div>
+    <p class="eyebrow">{% if is_admin_user %}مساحة الإدارة{% else %}مساحة المفتش{% endif %}</p>
+    <h1>الرئيسية</h1>
+    <p class="hint">اختر مساحة العمل التي تريد الانتقال إليها.</p>
+  </div>
 </section>
-<section class="card">
-  {% if inspections %}
-    <div class="list">
-    {% for inspection in inspections %}
-      <a class="visit visit-link" href="{% url 'inspection_detail' inspection.pk %}">
-        <div>
-          <strong>{{ inspection.institution.name }}</strong>
-          <small>{{ inspection.visit_date }} · المرجع v{{ inspection.master_version.number }}</small>
-        </div>
-        <span class="badge">{{ inspection.get_status_display }}</span>
-      </a>
-    {% endfor %}
-    </div>
-  {% else %}
-    <p>لا توجد زيارات بعد.</p>
+
+<section class="workspace-grid" aria-label="مساحات العمل">
+  <a class="card workspace-card" href="{% url 'inspection_list' %}">
+    <strong>{% if is_admin_user %}الزيارات{% else %}زياراتي{% endif %}</strong>
+    <span>{{ inspection_count }} زيارة متاحة</span>
+  </a>
+  <a class="card workspace-card" href="{% url 'institution_list' %}">
+    <strong>المؤسسات</strong>
+    <span>{{ institution_count }} مؤسسة متاحة</span>
+  </a>
+  {% if not is_admin_user %}
+  <a class="card workspace-card workspace-card-primary" href="{% url 'inspection_create' %}">
+    <strong>زيارة جديدة</strong>
+    <span>أنشئ مسودة وحدد نطاقها قبل التنفيذ الميداني.</span>
+  </a>
+  {% endif %}
+  {% if admin_access %}
+  <a class="card workspace-card" href="{% url 'builder_home' %}">
+    <strong>هندسة المرجع</strong>
+    <span>إدارة المرجع المنشور والمسودات.</span>
+  </a>
+  <a class="card workspace-card" href="{% url 'proposal_list' %}">
+    <strong>الاقتراحات</strong>
+    <span>مراجعة الإضافات الميدانية المقترحة.</span>
+  </a>
   {% endif %}
 </section>
 {% endblock %}

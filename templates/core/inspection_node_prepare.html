@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}تحضير {{ node.title_snapshot }}{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="مسار المجال">
+  <a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a>
+  <span aria-hidden="true">←</span>
+  <a href="{% url 'inspection_prepare' inspection.pk %}">تحضير الزيارة</a>
+  {% for crumb in breadcrumbs %}
+    <span aria-hidden="true">←</span>
+    {% if crumb.pk == node.pk %}
+      <span aria-current="page">{{ crumb.title_snapshot }}</span>
+    {% else %}
+      <a href="{% url 'inspection_node_prepare' inspection.pk crumb.pk %}">{{ crumb.title_snapshot }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">تحضير المجال</p>
+    <h1>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %} {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}</h1>
+    {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+</section>
+
+{% if can_edit %}
+<nav class="local-additions local-actions" aria-label="إضافات التحضير">
+  <span>إضافة:</span>
+  <a class="secondary button-link" href="{% url 'local_node_add' inspection.pk node.pk %}">+ فرع</a>
+  <a class="secondary button-link" href="{% url 'local_spec_add' inspection.pk node.pk %}">+ وصف</a>
+  <a class="secondary button-link" href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
+</nav>
+{% else %}
+<section class="readonly-banner" role="status">عرض التحضير للقراءة فقط.</section>
+{% endif %}
+
+<div class="prepare-summary">
+  {% if children %}
+  <section class="card">
+    <h2>الفروع التابعة</h2>
+    <div class="prepare-list">
+      {% for child in children %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ child.title_snapshot }}</strong>
+          {% if child.description_snapshot %}<small class="hint">{{ child.description_snapshot }}</small>{% endif %}
+        </div>
+        <a class="secondary button-link" href="{% url 'inspection_node_prepare' inspection.pk child.pk %}">فتح الفرع</a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if descriptions %}
+  <section class="card">
+    <h2>الأوصاف</h2>
+    <div class="prepare-list">
+      {% for description in descriptions %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ description.title_snapshot }}</strong>
+          <div class="prepare-node-meta">
+            <span class="hint">{{ description.get_field_type_snapshot_display }}</span>
+            {% if description.required_snapshot %}<span class="badge">إلزامي عند التنفيذ</span>{% endif %}
+            {% if description.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if items %}
+  <section class="card">
+    <h2>بنود التفتيش</h2>
+    <div class="prepare-list">
+      {% for item in items %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ item.title_snapshot }}</strong>
+          {% if item.guidance_snapshot %}<small class="hint">{{ item.guidance_snapshot }}</small>{% endif %}
+          {% if item.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not children and not descriptions and not items %}
+  <section class="card empty-state">
+    <p>هذا المجال لا يحتوي عناصر محضّرة بعد.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

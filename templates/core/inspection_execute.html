@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}تنفيذ الزيارة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · المرجع v{{ inspection.master_version.number }}</p>
+    <h1>تنفيذ الزيارة</h1>
+    <p class="hint">أدخل القيم، احسم حالات البنود، وسجّل المعاينات والتوصيات.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">نظرة عامة</a>
+    <a class="secondary button-link" href="{% url 'inspection_general' inspection.pk %}">المعاينات العامة</a>
+    {% if can_edit %}<a class="primary button-link" href="{% url 'inspection_complete' inspection.pk %}">إنهاء الزيارة</a>{% endif %}
+  </div>
+</section>
+
+<section class="card inspection-progress">
+  <div class="progress-line">
+    <strong>التقدم في النطاق الحالي</strong>
+    <span>{{ resolved_items }} / {{ total_items }} بندًا محسومًا</span>
+  </div>
+  <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}">
+    <span style="width:{{ progress }}%"></span>
+  </div>
+  <small>{{ progress }}%</small>
+</section>
+
+<section class="card inspection-tree-card">
+  <h2>مجالات التنفيذ</h2>
+  {% if tree %}
+    <div class="tree-list">
+      {% for node, depth in tree %}
+        <a class="tree-row field-tree-row {% if node.scope_role == 'CONTEXT' %}scope-context-row{% endif %}" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
+          <span class="tree-branch" aria-hidden="true">↳</span>
+          <span>
+            <strong>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}</strong>
+            {% if node.scope_role == "CONTEXT" %}<small>سياق بنيوي · افتح للوصول إلى المحتوى المختار داخله</small>{% elif node.description_snapshot %}<small>{{ node.description_snapshot|truncatechars:90 }}</small>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>لا يوجد نطاق جاهز للتنفيذ. حضّر الزيارة أولًا.</p>
+      {% if can_edit %}<a class="primary button-link" href="{% url 'inspection_prepare' inspection.pk %}">تحضير الزيارة</a>{% endif %}
+    </div>
+  {% endif %}
+</section>
+
+{% if inspection.status == "COMPLETED" %}
+<section class="readonly-banner" role="status">الزيارة مكتملة. البيانات معروضة للقراءة فقط.</section>
+{% endif %}
+{% endblock %}

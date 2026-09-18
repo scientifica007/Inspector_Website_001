@@ -11,8 +11,6 @@
     <a class="secondary button-link" href="{% url 'inspection_export' inspection.pk %}">تحميل JSON</a>
     <a class="secondary button-link" href="{% url 'inspection_general' inspection.pk %}">المعاينات العامة</a>
     {% if can_edit %}
-      <a class="secondary button-link" href="{% url 'inspection_scope' inspection.pk %}">إدارة نطاق الزيارة</a>
-      <a class="secondary button-link" href="{% url 'local_root_node_add' inspection.pk %}">+ عنصر محلي رئيسي</a>
       <a class="primary button-link" href="{% url 'inspection_complete' inspection.pk %}">إنهاء الزيارة</a>
     {% endif %}
   </div>
@@ -29,47 +27,23 @@
   <small>{{ progress }}%</small>
 </section>
 
-<section class="card inspection-tree-card">
-  <div class="section-title">
-    <h2>نطاق الزيارة</h2>
-    {% if can_edit %}<a href="{% url 'inspection_scope' inspection.pk %}">تعديل النطاق</a>{% endif %}
-  </div>
-  {% if tree %}
-    <div class="tree-list">
-      {% for node, depth in tree %}
-        {% if node.scope_role == "CONTEXT" %}
-          <a class="tree-row field-tree-row scope-context-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
-            <span class="tree-branch" aria-hidden="true">↳</span>
-            <span>
-              <strong>{{ node.title_snapshot }}</strong>
-              <small>سياق بنيوي · افتح للوصول إلى العناصر المختارة داخله</small>
-            </span>
-          </a>
-        {% else %}
-          <a class="tree-row field-tree-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
-            <span class="tree-branch" aria-hidden="true">↳</span>
-            <span>
-              <strong>
-                {{ node.title_snapshot }}
-                {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
-              </strong>
-              {% if node.description_snapshot %}<small>{{ node.description_snapshot|truncatechars:90 }}</small>{% endif %}
-            </span>
-          </a>
-        {% endif %}
-      {% endfor %}
+<section class="workflow-grid" aria-label="مراحل العمل على الزيارة">
+  <a class="card workflow-card" href="{% url 'inspection_prepare' inspection.pk %}">
+    <span class="workflow-step">1</span>
+    <div>
+      <strong>تحضير الزيارة</strong>
+      <p>حدد النطاق، أضف الفروع والأوصاف والبنود، وجهّز البطاقة قبل العمل الميداني.</p>
+      <small>{{ scope_node_count }} عنصرًا بنيويًا ضمن النطاق الحالي</small>
     </div>
-  {% else %}
-    <div class="empty-state">
-      <p>نطاق الزيارة فارغ. اختر فقط ما تحتاج إلى فحصه من المرجع، أو أضف عنصرًا ميدانيًا جديدًا.</p>
-      {% if can_edit %}
-      <div class="actions">
-        <a class="primary button-link" href="{% url 'inspection_scope' inspection.pk %}">اختيار من المرجع</a>
-        <a class="secondary button-link" href="{% url 'local_root_node_add' inspection.pk %}">+ عنصر محلي رئيسي</a>
-      </div>
-      {% endif %}
+  </a>
+  <a class="card workflow-card" href="{% url 'inspection_execute' inspection.pk %}">
+    <span class="workflow-step">2</span>
+    <div>
+      <strong>تنفيذ الزيارة</strong>
+      <p>أدخل القيم، احسم حالات البنود، وسجّل المعاينات والتوصيات.</p>
+      <small>{{ total_items }} بند تفتيش نشط</small>
     </div>
-  {% endif %}
+  </a>
 </section>
 
 {% if inspection.status == "COMPLETED" %}

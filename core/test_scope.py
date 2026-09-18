@@ -228,7 +228,7 @@ class SelectiveScopeCoreTests(TestCase):
         )
         self.assertRedirects(
             response,
-            reverse("inspection_node", args=[self.inspection.pk, child_snapshot.pk]),
+            reverse("inspection_node_prepare", args=[self.inspection.pk, child_snapshot.pk]),
         )
         local = child_snapshot.item_results.get(title_snapshot="بند محلي داخل السياق")
         self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
@@ -355,7 +355,7 @@ class SelectiveScopeCoreTests(TestCase):
         )
         self.assertRedirects(
             response,
-            reverse("inspection_node", args=[self.inspection.pk, local.pk]),
+            reverse("inspection_node_prepare", args=[self.inspection.pk, local.pk]),
         )
         self.assertIsNone(local.parent_id)
         self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
