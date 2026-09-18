@@ -266,14 +266,15 @@ def _activate_snapshot_node(
             )
         else:
             updates = []
+            reactivated = snapshot.scope_state != ScopeState.ACTIVE
             if snapshot.parent_id != (parent_snapshot.id if parent_snapshot else None):
                 snapshot.parent = parent_snapshot
                 updates.append("parent")
-            if snapshot.scope_state != ScopeState.ACTIVE:
+            if reactivated:
                 snapshot.scope_state = ScopeState.ACTIVE
                 updates.append("scope_state")
-                if not is_target:
-                    snapshot.scope_role = ScopeRole.CONTEXT
+                if snapshot.scope_role != desired_role:
+                    snapshot.scope_role = desired_role
                     updates.append("scope_role")
             if is_target and desired_role == ScopeRole.SELECTED and snapshot.scope_role != ScopeRole.SELECTED:
                 snapshot.scope_role = ScopeRole.SELECTED
@@ -281,8 +282,8 @@ def _activate_snapshot_node(
             if is_target and locked and not snapshot.scope_locked:
                 snapshot.scope_locked = True
                 updates.append("scope_locked")
-            if is_target and (snapshot.scope_origin != origin) and (
-                snapshot.scope_role == ScopeRole.CONTEXT or "scope_state" in updates
+            if is_target and snapshot.scope_origin != origin and (
+                reactivated or desired_role == ScopeRole.SELECTED
             ):
                 snapshot.scope_origin = origin
                 updates.append("scope_origin")
@@ -468,16 +469,19 @@ def _active_dependents(node):
         return True
     return False
 
-def _prune_context_ancestors(node):
-    parent = node.parent
-    while parent is not None:
-        if parent.scope_role != ScopeRole.CONTEXT or parent.scope_locked:
+def _prune_context_chain(node):
+    current = node
+    while current is not None:
+        if current.scope_state != ScopeState.ACTIVE:
+            current = current.parent
+            continue
+        if current.scope_role != ScopeRole.CONTEXT or current.scope_locked:
             break
-        if _active_dependents(parent):
+        if _active_dependents(current):
             break
-        parent.scope_state = ScopeState.EXCLUDED
-        parent.save(update_fields=["scope_state"])
-        parent = parent.parent
+        current.scope_state = ScopeState.EXCLUDED
+        current.save(update_fields=["scope_state"])
+        current = current.parent
 
 def _inspection_node_subtree(node):
     nodes = []
@@ -522,7 +526,7 @@ def exclude_scope_node(node):
             candidate.save(update_fields=["scope_state"])
 
     _mark_selective(node.inspection)
-    _prune_context_ancestors(node)
+    _prune_context_chain(node.parent)
     return True
 
 @transaction.atomic
@@ -534,7 +538,7 @@ def exclude_scope_specification(value):
     value.scope_state = ScopeState.EXCLUDED
     value.save(update_fields=["scope_state"])
     _mark_selective(value.inspection_node.inspection)
-    _prune_context_ancestors(value.inspection_node)
+    _prune_context_chain(value.inspection_node)
     return True
 
 @transaction.atomic
@@ -546,7 +550,7 @@ def exclude_scope_item(result):
     result.scope_state = ScopeState.EXCLUDED
     result.save(update_fields=["scope_state"])
     _mark_selective(result.inspection_node.inspection)
-    _prune_context_ancestors(result.inspection_node)
+    _prune_context_chain(result.inspection_node)
     return True
 
 def active_item_results(inspection):
