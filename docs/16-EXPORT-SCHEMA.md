@@ -1,33 +1,30 @@
-# INSPECTION EXPORT SCHEMA — v1
+# INSPECTION EXPORT SCHEMA — v2
 
 اسم المخطط:
 
-`inspection-export-v1`
+`inspection-export-v2`
 
 ## الهدف
 
-إخراج نسخة منظمة من الزيارة يمكن:
+إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية الفعلية، بما في ذلك نطاق الزيارة وليس البيانات المعبأة فقط.
+
+يمكن:
 - أرشفتها؛
 - فحصها يدويًا؛
-- تمريرها لاحقًا إلى ذكاء اصطناعي خارجي لبناء تقرير؛
-- معالجتها برمجيًا دون الاعتماد على HTML.
-
-الموقع في V1 **لا يولد التقرير بالذكاء الاصطناعي داخله**.
+- معالجتها برمجيًا؛
+- تمريرها لاحقًا إلى أدوات إعداد التقارير.
 
 ## مصدر الحقيقة
 
-التصدير مبني على **Inspection Snapshot** الخاصة بالزيارة، وليس على الصياغة الحالية للـMaster.
+التصدير مبني على Inspection Snapshot المثبتة للزيارة، وليس على الصياغة الحالية للـMaster.
 
-لذلك:
-- تعديل عنوان مجال لاحقًا لا يغير Export زيارة قديمة؛
-- تعديل خيارات مواصفة لاحقًا لا يغير تعريف المواصفة المحفوظ مع الزيارة؛
-- تعديل بند لاحقًا لا يغير نص البند التاريخي.
+تعديل Master لاحقًا لا يعيد تفسير الزيارة القديمة.
 
 ## المستوى الأعلى
 
 ```json
 {
-  "schema": "inspection-export-v1",
+  "schema": "inspection-export-v2",
   "inspection": {}
 }
 ```
@@ -38,6 +35,7 @@
 - `id`
 - `visit_date`
 - `status`
+- `scope_mode`
 - `institution`
 - `inspector`
 - `master_version`
@@ -45,23 +43,10 @@
 - `general_recommendations`
 - `nodes`
 
-## institution
+## scope_mode
 
-يتضمن معرف المؤسسة واسمها ونوعها والبلدية كما هي مرتبطة بالزيارة.
-
-## inspector
-
-V1 يخرج:
-- `id`
-- `username`
-
-ولا يضيف البريد أو كلمة المرور أو Session أو Token.
-
-## master_version
-
-يتضمن:
-- معرف إصدار المرجع؛
-- رقم الإصدار.
+- `LEGACY_FULL`: زيارة تاريخية أُنشئت بالنموذج السابق الكامل.
+- `SELECTIVE`: زيارة تعمل بنطاق انتقائي.
 
 ## nodes
 
@@ -70,26 +55,55 @@ V1 يخرج:
 - `source_stable_id` إن كان مصدره Master
 - `title`
 - `description`
-- `local_addition`
+- `scope`
 - `specifications`
 - `checklist_items`
 - `additional_observations`
 - `recommendations`
 - `children`
 
+## scope على مستوى Node
+
+```json
+{
+  "origin": "MANUAL",
+  "state": "ACTIVE",
+  "locked": false,
+  "role": "SELECTED"
+}
+```
+
+القيم الممكنة لـ `origin`:
+- LEGACY
+- MANUAL
+- GUIDE
+- ASSIGNMENT
+- LOCAL
+
+القيم الممكنة لـ `state`:
+- ACTIVE
+- EXCLUDED
+
+القيم الممكنة لـ `role`:
+- SELECTED
+- CONTEXT
+
 ## specifications
 
-كل مواصفة تتضمن:
-- Snapshot ID
-- Stable ID للمصدر إن وجد
-- العنوان
-- نوع الحقل
-- هل كانت إلزامية
-- خياراتها التاريخية
-- Help text التاريخي
-- القيمة
-- Local-addition flag
-- Proposal trace إذا كانت إضافة محلية ولها Proposal
+كل مواصفة تتضمن Snapshot التعريف التاريخي، القيمة، و:
+
+```json
+{
+  "scope": {
+    "origin": "MANUAL",
+    "state": "ACTIVE",
+    "locked": false,
+    "completion_required": false
+  }
+}
+```
+
+المواصفة EXCLUDED تبقى في التصدير إذا كانت Snapshot موجودة، لأن الإخراج من النطاق لا يمحو الحقيقة التاريخية أو القيمة السابقة.
 
 ## checklist_items
 
@@ -100,21 +114,37 @@ V1 يخرج:
 - Guidance التاريخي
 - الحالة
 - المعاينة/الملاحظة
-- Local-addition flag
-- Proposal trace إن وجد
+- Scope metadata
 
-## Proposal trace
+بنفس منطق المواصفات، يبقى العنصر EXCLUDED قابلًا للتتبع بدل حذفه.
 
-لا يعيد تصدير Payload الإدارة كاملًا. يعرض أثرًا تشغيليًا محدودًا:
+## Local content وProposal trace
+
+لا يوجد في v2 حقل `local_addition` منفصل.
+
+المعلومة الصحيحة هي:
+
+`scope.origin = "LOCAL"`
+
+وعند وجود Proposal مرتبط بالإضافة المحلية يضاف أثر محدود:
 - `proposal_id`
 - `status`
 - `resolution_data`
+
+## لماذا يتضمن Export العناصر EXCLUDED؟
+
+لأن Soft Exclusion قرار نطاق، وليس حذفًا للبيانات.
+
+وجود العنصر في الملف مع `state = EXCLUDED` يحافظ على:
+- البيانات التي سبق إدخالها؛
+- أثر تغيير النطاق؛
+- إمكانية التفسير اللاحق دون الخلط بين «لم يوجد أصلًا» و«كان موجودًا ثم أُخرج».
 
 ## الترتيب
 
 Nodes والمواصفات والبنود تخرج حسب ترتيب Snapshot ثم ID كفاصل ثابت.
 
-لا يوجد `exported_at` في v1 حتى يبقى الناتج Deterministic لنفس حالة قاعدة البيانات.
+لا يوجد `exported_at` حتى يبقى الناتج Deterministic لنفس حالة قاعدة البيانات.
 
 ## Encoding
 
@@ -123,4 +153,4 @@ Nodes والمواصفات والبنود تخرج حسب ترتيب Snapshot ث
 - UTF-8
 - `ensure_ascii=false`
 
-أي أن العربية تبقى مقروءة مباشرة داخل الملف.
+ولا تُصدّر كلمات المرور أو Sessions أو Tokens أو أسرار الاتصال.
