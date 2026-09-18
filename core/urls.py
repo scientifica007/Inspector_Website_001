@@ -8,6 +8,7 @@ urlpatterns = [
     path("institutions/new/", views.institution_create, name="institution_create"),
     path("inspections/new/", views.inspection_create, name="inspection_create"),
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
+    path("inspections/<int:pk>/scope/", views.inspection_scope, name="inspection_scope"),
     path("inspections/<int:pk>/export.json", export_views.inspection_export, name="inspection_export"),
     path(
         "inspections/<int:inspection_pk>/nodes/<int:node_pk>/",
@@ -23,6 +24,11 @@ urlpatterns = [
         "inspections/<int:pk>/complete/",
         views.inspection_complete,
         name="inspection_complete",
+    ),
+    path(
+        "inspections/<int:inspection_pk>/add-root-node/",
+        local_views.local_root_node_add,
+        name="local_root_node_add",
     ),
     path(
         "inspections/<int:inspection_pk>/nodes/<int:node_pk>/add-node/",
