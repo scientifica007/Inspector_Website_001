@@ -7,6 +7,22 @@ urlpatterns = [
     path("institutions/", views.institution_list, name="institution_list"),
     path("institutions/new/", views.institution_create, name="institution_create"),
     path("inspections/new/", views.inspection_create, name="inspection_create"),
+    path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
+    path(
+        "inspections/<int:inspection_pk>/nodes/<int:node_pk>/",
+        views.inspection_node,
+        name="inspection_node",
+    ),
+    path(
+        "inspections/<int:pk>/general/",
+        views.inspection_general,
+        name="inspection_general",
+    ),
+    path(
+        "inspections/<int:pk>/complete/",
+        views.inspection_complete,
+        name="inspection_complete",
+    ),
 
     path("builder/", builder_views.builder_home, name="builder_home"),
     path("builder/draft/new/", builder_views.draft_create, name="builder_draft_create"),

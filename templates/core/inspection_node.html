@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ node.title_snapshot }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a></p>
+    <h1>{{ node.title_snapshot }}</h1>
+    {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
+</section>
+
+{% if not can_edit %}
+<section class="readonly-banner" role="status">عرض للقراءة فقط.</section>
+{% endif %}
+
+<form method="post" class="field-workflow">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  {% if specification_blocks %}
+  <section class="card field-section">
+    <h2>المواصفات</h2>
+    <div class="field-grid">
+      {% for block in specification_blocks %}
+      <div class="field-block">
+        <label for="{{ block.field.id_for_label }}">{{ block.field.label }}</label>
+        {{ block.field }}
+        {% if block.field.help_text %}<small class="hint">{{ block.field.help_text }}</small>{% endif %}
+        {{ block.field.errors }}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if item_blocks %}
+  <section class="card field-section">
+    <h2>بنود التفتيش</h2>
+    <div class="inspection-items">
+      {% for block in item_blocks %}
+      <article class="inspection-item">
+        <div class="item-heading">
+          <strong>{{ block.result.title_snapshot }}</strong>
+          {% if block.result.guidance_snapshot %}<small class="hint">{{ block.result.guidance_snapshot }}</small>{% endif %}
+        </div>
+        <div class="item-controls">
+          <label>
+            <span>الحالة</span>
+            {{ block.status }}
+            {{ block.status.errors }}
+          </label>
+          <label>
+            <span>{{ block.observation.label }}</span>
+            {{ block.observation }}
+            {{ block.observation.errors }}
+          </label>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="card field-section">
+    <h2>معاينات وتوصيات المجال</h2>
+    <div class="field-grid">
+      <div class="field-block">
+        <label for="{{ form.additional_observations.id_for_label }}">{{ form.additional_observations.label }}</label>
+        {{ form.additional_observations }}
+        {{ form.additional_observations.errors }}
+      </div>
+      <div class="field-block">
+        <label for="{{ form.recommendations.id_for_label }}">{{ form.recommendations.label }}</label>
+        {{ form.recommendations }}
+        {{ form.recommendations.errors }}
+      </div>
+    </div>
+  </section>
+
+  {% if can_edit %}
+  <div class="sticky-save">
+    <button class="primary" type="submit">حفظ هذا المجال</button>
+    <span class="hint">يُحفظ العمل على الخادم.</span>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

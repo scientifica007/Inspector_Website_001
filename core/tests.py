@@ -134,8 +134,8 @@ class Gate2CoreTests(TestCase):
             reverse("inspection_create"),
             {"institution": self.institution.id, "visit_date": "2026-09-18"},
         )
-        self.assertRedirects(response, reverse("dashboard"))
         inspection = Inspection.objects.get(inspector=self.inspector)
+        self.assertRedirects(response, reverse("inspection_detail", args=[inspection.pk]))
         self.assertEqual(inspection.master_version, latest)
         self.assertEqual(inspection.status, "DRAFT")
 
