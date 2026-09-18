@@ -17,6 +17,13 @@
 - واجهة عربية RTL، Mobile-first، قابلة للعمل من الهاتف والحاسوب؛
 - تصدير منظم للبيانات لاستخدامه لاحقًا في إعداد التقارير بالذكاء الاصطناعي.
 
+## Stack المعتمد مبدئيًا بعد Gate 1
+
+- Django 5.2 LTS
+- PostgreSQL في Production
+- Django Templates
+- HTMX مؤجل حتى تظهر حاجة تفاعلية محددة
+
 ## الحالات القياسية للبند
 
 - غير مفحوص `UNCHECKED`
@@ -51,9 +58,12 @@
 - [خطة التنفيذ والبوابات](docs/05-DELIVERY-PLAN.md)
 - [ملاحظات البحث في المشاريع المشابهة](docs/06-RESEARCH-NOTES.md)
 - [سجل القرارات](docs/07-DECISIONS.md)
+- [Gate 1 Technical Spike](docs/08-TECHNICAL-SPIKE.md)
+- [قرار Stack](docs/09-STACK-DECISION.md)
+- [التشغيل المحلي](docs/10-LOCAL-RUN.md)
 - [الحالة الحالية](CURRENT-STATE.json)
 - [سجل التغييرات](CHANGELOG.md)
 
 ## حالة المشروع
 
-Foundation v0.1 قيد المراجعة. لا يوجد Implementation Production بعد.
+Gate 1 اجتازت CI بنجاح. الخطوة التالية بعد دمج PR #3 هي Gate 2: Core Data & Authentication.
