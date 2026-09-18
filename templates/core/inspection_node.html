@@ -4,13 +4,20 @@
 <section class="page-head">
   <div>
     <p class="eyebrow"><a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a></p>
-    <h1>{{ node.title_snapshot }}</h1>
+    <h1>{{ node.title_snapshot }} {% if node.local_addition %}<span class="local-badge">محلي</span>{% endif %}</h1>
     {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
   </div>
   <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
 </section>
 
-{% if not can_edit %}
+{% if can_edit %}
+<nav class="local-additions" aria-label="إضافات ميدانية">
+  <span>إضافة ميدانية:</span>
+  <a href="{% url 'local_node_add' inspection.pk node.pk %}">+ فرع</a>
+  <a href="{% url 'local_spec_add' inspection.pk node.pk %}">+ مواصفة</a>
+  <a href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
+</nav>
+{% else %}
 <section class="readonly-banner" role="status">عرض للقراءة فقط.</section>
 {% endif %}
 
@@ -24,7 +31,10 @@
     <div class="field-grid">
       {% for block in specification_blocks %}
       <div class="field-block">
-        <label for="{{ block.field.id_for_label }}">{{ block.field.label }}</label>
+        <label for="{{ block.field.id_for_label }}">
+          {{ block.field.label }}
+          {% if block.snapshot.local_addition %}<span class="local-badge">محلي</span>{% endif %}
+        </label>
         {{ block.field }}
         {% if block.field.help_text %}<small class="hint">{{ block.field.help_text }}</small>{% endif %}
         {{ block.field.errors }}
@@ -41,7 +51,7 @@
       {% for block in item_blocks %}
       <article class="inspection-item">
         <div class="item-heading">
-          <strong>{{ block.result.title_snapshot }}</strong>
+          <strong>{{ block.result.title_snapshot }} {% if block.result.local_addition %}<span class="local-badge">محلي</span>{% endif %}</strong>
           {% if block.result.guidance_snapshot %}<small class="hint">{{ block.result.guidance_snapshot }}</small>{% endif %}
         </div>
         <div class="item-controls">

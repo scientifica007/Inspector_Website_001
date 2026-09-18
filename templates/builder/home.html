@@ -10,6 +10,7 @@
   {% if draft %}
     <div class="actions">
       <a class="secondary button-link" href="{% url 'builder_preview' %}">معاينة</a>
+      <a class="secondary button-link" href="{% url 'builder_publish' %}">نشر المسودة</a>
       <a class="primary button-link" href="{% url 'builder_node_create' %}">+ عنصر رئيسي</a>
     </div>
   {% endif %}

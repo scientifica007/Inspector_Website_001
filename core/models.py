@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -36,6 +38,7 @@ class ProposalType(models.TextChoices):
 class InstitutionVerificationStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
     VERIFIED = "VERIFIED", "معتمدة"
+    REJECTED = "REJECTED", "مرفوضة"
 
 class FieldType(models.TextChoices):
     SHORT_TEXT = "SHORT_TEXT", "نص قصير"
@@ -88,6 +91,7 @@ class MasterVersion(models.Model):
         return f"v{self.number} — {self.status}"
 
 class StructureNode(models.Model):
+    stable_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     master_version = models.ForeignKey(MasterVersion, on_delete=models.CASCADE, related_name="nodes")
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="children")
     title = models.CharField(max_length=255)
@@ -103,6 +107,7 @@ class StructureNode(models.Model):
         return self.title
 
 class SpecificationDefinition(models.Model):
+    stable_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     node = models.ForeignKey(StructureNode, on_delete=models.CASCADE, related_name="specifications")
     title = models.CharField(max_length=255)
     field_type = models.CharField(max_length=24, choices=FieldType.choices)
@@ -113,6 +118,7 @@ class SpecificationDefinition(models.Model):
     active = models.BooleanField(default=True)
 
 class ChecklistItem(models.Model):
+    stable_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
     node = models.ForeignKey(StructureNode, on_delete=models.CASCADE, related_name="items")
     title = models.CharField(max_length=500)
     guidance = models.TextField(blank=True)
@@ -175,12 +181,14 @@ class Proposal(models.Model):
     source_inspection = models.ForeignKey(
         Inspection, null=True, blank=True, on_delete=models.SET_NULL, related_name="proposals"
     )
+    source_local_id = models.PositiveBigIntegerField(null=True, blank=True)
     proposed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="proposals"
     )
     payload = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=ProposalStatus.choices, default=ProposalStatus.PENDING)
     resolution_note = models.TextField(blank=True)
+    resolution_data = models.JSONField(default=dict, blank=True)
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

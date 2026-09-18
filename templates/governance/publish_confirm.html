@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}نشر المرجع{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin Builder</p>
+    <h1>نشر المسودة v{{ draft.number }}</h1>
+  </div>
+  <a class="secondary button-link" href="{% url 'builder_home' %}">إلغاء</a>
+</section>
+<section class="card confirmation-card">
+  <p>سيصبح هذا الإصدار هو المرجع المستخدم في الزيارات الجديدة، وسيُؤرشف الإصدار المنشور السابق. الزيارات القديمة لن تتغير.</p>
+  {% if pending_count %}
+    <p class="warning">يوجد {{ pending_count }} اقتراحًا لم يُحسم بعد. يمكن نشر المسودة الآن، وستدخل الاقتراحات اللاحقة في المسودة التالية.</p>
+  {% endif %}
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label class="confirm-check">{{ form.confirm }} <span>{{ form.confirm.label }}</span></label>
+    {{ form.confirm.errors }}
+    <button class="primary" type="submit">نشر المرجع</button>
+  </form>
+</section>
+{% endblock %}

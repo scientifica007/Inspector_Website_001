@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}الاقتراحات{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">Admin</p><h1>اقتراحات الميدان</h1></div>
+</section>
+<nav class="proposal-filters" aria-label="تصفية الاقتراحات">
+  {% for value, label in status_choices %}
+    <a class="{% if selected_status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>
+  {% endfor %}
+</nav>
+<section class="card">
+  {% for proposal in proposals %}
+    <a class="proposal-row" href="{% url 'proposal_detail' proposal.pk %}">
+      <div>
+        <strong>{{ proposal.get_proposal_type_display }}</strong>
+        <small>
+          {{ proposal.proposed_by.username }}
+          {% if proposal.source_inspection %} · {{ proposal.source_inspection.institution.name }}{% endif %}
+        </small>
+      </div>
+      <span class="badge">{{ proposal.get_status_display }}</span>
+    </a>
+  {% empty %}
+    <p>لا توجد اقتراحات بهذه الحالة.</p>
+  {% endfor %}
+</section>
+{% endblock %}

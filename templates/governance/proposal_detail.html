@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}اقتراح #{{ proposal.pk }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">اقتراح #{{ proposal.pk }}</p>
+    <h1>{{ proposal.get_proposal_type_display }}</h1>
+    <p class="hint">الحالة: {{ proposal.get_status_display }} · المرسل: {{ proposal.proposed_by.username }}</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'proposal_list' %}">العودة</a>
+</section>
+
+{% if proposal.source_inspection %}
+<section class="card proposal-context">
+  <strong>مصدر الاقتراح</strong>
+  <a href="{% url 'inspection_detail' proposal.source_inspection.pk %}">{{ proposal.source_inspection.institution.name }} · {{ proposal.source_inspection.visit_date }}</a>
+</section>
+{% endif %}
+
+{% if proposal.status == "PENDING" %}
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+    <div class="governance-actions">
+      <button class="primary" name="action" value="approve" type="submit">اعتماد في المسودة</button>
+      {% if proposal.proposal_type == "INSTITUTION" %}
+        <button class="secondary" name="action" value="merge" type="submit">دمج مع المؤسسة المختارة</button>
+      {% endif %}
+      <button class="danger-outline" name="action" value="reject" type="submit">رفض</button>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="card">
+  <p><strong>القرار:</strong> {{ proposal.get_status_display }}</p>
+  {% if proposal.resolution_note %}<p><strong>ملاحظة:</strong> {{ proposal.resolution_note }}</p>{% endif %}
+  {% if proposal.resolved_by %}<p class="hint">حسمه: {{ proposal.resolved_by.username }} · {{ proposal.resolved_at }}</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}
