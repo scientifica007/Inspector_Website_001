@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>تسجيل الدخول</h1>
+  {% if form.errors %}<p class="error">بيانات الدخول غير صحيحة.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <label>اسم المستخدم {{ form.username }}</label>
+    <label>كلمة المرور {{ form.password }}</label>
+    <button class="primary" type="submit">دخول</button>
+  </form>
+</section>
+{% endblock %}

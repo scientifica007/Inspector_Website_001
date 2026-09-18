@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">مساحة المفتش</p><h1>زياراتي</h1></div>
+  <button class="primary" type="button" disabled title="ضمن Gate لاحقة">+ زيارة جديدة</button>
+</section>
+<section class="card">
+  {% if inspections %}
+    <div class="list">
+    {% for inspection in inspections %}
+      <article class="visit">
+        <div>
+          <strong>{{ inspection.institution.name }}</strong>
+          <small>{{ inspection.visit_date }} · المرجع v{{ inspection.master_version.number }}</small>
+        </div>
+        <span class="badge">{{ inspection.get_status_display }}</span>
+      </article>
+    {% endfor %}
+    </div>
+  {% else %}
+    <p>لا توجد زيارات بعد.</p>
+  {% endif %}
+</section>
+{% endblock %}
