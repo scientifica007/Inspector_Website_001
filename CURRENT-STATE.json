@@ -1,0 +1,34 @@
+{
+  "project": "Inspector_Website_001",
+  "date": "2026-09-18",
+  "repository": "scientifica007/Inspector_Website_001",
+  "default_branch": "main",
+  "working_branch": "foundation/v0.1",
+  "baseline_commit": "c7b551244b2c18846ffb24bed2089931c0b7807a",
+  "phase": "FOUNDATION",
+  "gate": "GATE_0",
+  "status": "IN_REVIEW",
+  "implementation_started": false,
+  "core_decisions": {
+    "recursive_structure": true,
+    "dynamic_specifications": true,
+    "checklist_items": true,
+    "statuses": [
+      "UNCHECKED",
+      "NOT_APPLICABLE",
+      "COMPLIANT",
+      "OBSERVATION",
+      "NON_COMPLIANT"
+    ],
+    "admin_moderates_shared_additions": true,
+    "draft_publish_versioning": true,
+    "inspection_pinned_to_master_version": true,
+    "historical_snapshots": true,
+    "mobile_first_rtl": true,
+    "autosave": true,
+    "v1_output": "JSON"
+  },
+  "next_gate": "GATE_1_TECHNICAL_SPIKE",
+  "next_action": "Review and accept Foundation v0.1, then run a narrow technical spike to select the simplest production stack.",
+  "blocked": false
+}
