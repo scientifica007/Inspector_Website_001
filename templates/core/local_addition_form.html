@@ -3,11 +3,18 @@
 {% block content %}
 <section class="page-head">
   <div>
-    <p class="eyebrow">{{ inspection.institution.name }} · {{ node.title_snapshot }}</p>
+    <p class="eyebrow">
+      {{ inspection.institution.name }}
+      {% if node %} · {{ node.title_snapshot }}{% else %} · جذر الزيارة{% endif %}
+    </p>
     <h1>{{ title }}</h1>
     <p class="hint">تظهر الإضافة فورًا في هذه الزيارة، وتذهب إلى Admin كاقتراح قبل تعميمها.</p>
   </div>
-  <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk node.pk %}">إلغاء</a>
+  {% if node %}
+    <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk node.pk %}">إلغاء</a>
+  {% else %}
+    <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">إلغاء</a>
+  {% endif %}
 </section>
 <section class="card narrow-form">
   <form method="post" class="stack-form">
