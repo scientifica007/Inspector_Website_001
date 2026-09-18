@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## Unreleased — DC-SCOPE-02 Stage A: Selective Visit Scope Core
+
+### Changed
+- New visits start with an empty selective scope pinned to the current published Master.
+- The Master is treated as a reference library rather than a mandatory full-visit template.
+- Inspectors can add a full branch, a single specification, or a single checklist item.
+- Structural ancestors are materialized as CONTEXT only when needed.
+- Scope exclusion is soft and preserves captured data for later restoration.
+- Progress counts ACTIVE checklist items only.
+- Completion can enforce independent `completion_required` obligations.
+- Local content now uses `scope_origin=LOCAL` instead of a redundant `local_addition` flag.
+- Local root nodes are supported and continue through Proposal governance.
+- Canonical JSON export becomes `inspection-export-v2` with explicit scope metadata.
+
+### Data migration
+- Added `0004_selective_visit_scope`.
+- Existing visits are classified as `LEGACY_FULL`.
+- Existing non-local snapshots become `LEGACY`; historical local additions become `LOCAL`.
+- Existing values, results, observations and Proposal links are retained.
+- Migration has an explicit reverse mapping for the former local-addition flag.
+
+### Verification
+- Migration drift check, Django system check and migration application are part of CI.
+- Dedicated selective-scope invariants and legacy-data migration tests added.
+- Human browser/mobile acceptance remains required before merge/PILOT-READY.
+
+---
+
 ## 2026-09-18 — Gate 6 JSON Export & Pilot Readiness
 
 ### Added
