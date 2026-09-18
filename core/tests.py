@@ -57,7 +57,7 @@ class Gate2CoreTests(TestCase):
             visit_date=date(2026, 9, 17),
         )
         self.client.login(username="inspector", password="test-pass-123")
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("inspection_list"))
         self.assertEqual(list(response.context["inspections"]), [own])
 
     def test_admin_sees_all_inspections(self):
@@ -76,7 +76,7 @@ class Gate2CoreTests(TestCase):
             visit_date=date(2026, 9, 17),
         )
         self.client.login(username="admin", password="test-pass-123")
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("inspection_list"))
         self.assertEqual(response.context["inspections"].count(), 2)
 
     def test_inspector_added_institution_is_pending_and_proposed(self):
