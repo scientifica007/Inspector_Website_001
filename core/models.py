@@ -33,6 +33,10 @@ class ProposalType(models.TextChoices):
     SPECIFICATION = "SPECIFICATION", "مواصفة"
     ITEM = "ITEM", "بند"
 
+class InstitutionVerificationStatus(models.TextChoices):
+    PENDING = "PENDING", "قيد المراجعة"
+    VERIFIED = "VERIFIED", "معتمدة"
+
 class FieldType(models.TextChoices):
     SHORT_TEXT = "SHORT_TEXT", "نص قصير"
     LONG_TEXT = "LONG_TEXT", "نص طويل"
@@ -54,12 +58,22 @@ class Institution(models.Model):
     institution_type = models.CharField(max_length=120, blank=True)
     commune = models.CharField(max_length=120, blank=True)
     active = models.BooleanField(default=True)
-    verified = models.BooleanField(default=True)
+    verification_status = models.CharField(
+        max_length=16,
+        choices=InstitutionVerificationStatus.choices,
+        default=InstitutionVerificationStatus.VERIFIED,
+    )
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="institutions_created"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="institutions_created",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name", "id"]
 
     def __str__(self):
         return self.name
@@ -116,6 +130,9 @@ class Inspection(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ["-visit_date", "-id"]
+
 class InspectionNode(models.Model):
     inspection = models.ForeignKey(Inspection, on_delete=models.CASCADE, related_name="inspection_nodes")
     source_node = models.ForeignKey(StructureNode, null=True, blank=True, on_delete=models.SET_NULL)
@@ -126,6 +143,19 @@ class InspectionNode(models.Model):
     local_addition = models.BooleanField(default=False)
     additional_observations = models.TextField(blank=True)
     recommendations = models.TextField(blank=True)
+
+class SpecificationValue(models.Model):
+    inspection_node = models.ForeignKey(
+        InspectionNode, on_delete=models.CASCADE, related_name="specification_values"
+    )
+    source_specification = models.ForeignKey(
+        SpecificationDefinition, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    title_snapshot = models.CharField(max_length=255)
+    field_type_snapshot = models.CharField(max_length=24, choices=FieldType.choices)
+    value = models.JSONField(null=True, blank=True)
+    local_addition = models.BooleanField(default=False)
+    sort_order_snapshot = models.PositiveIntegerField(default=0)
 
 class InspectionItemResult(models.Model):
     inspection_node = models.ForeignKey(InspectionNode, on_delete=models.CASCADE, related_name="item_results")
@@ -148,8 +178,11 @@ class Proposal(models.Model):
     status = models.CharField(max_length=16, choices=ProposalStatus.choices, default=ProposalStatus.PENDING)
     resolution_note = models.TextField(blank=True)
     resolved_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="proposals_resolved"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proposals_resolved",
     )
     resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

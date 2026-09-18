@@ -1,24 +1,42 @@
 from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import (
-    FieldType, Inspection, InspectionNode, Institution, MasterStatus, MasterVersion,
-    Profile, Proposal, ProposalStatus, ProposalType, ResultStatus, Role,
-    SpecificationDefinition, StructureNode,
+    FieldType,
+    Inspection,
+    InspectionNode,
+    Institution,
+    InstitutionVerificationStatus,
+    MasterStatus,
+    MasterVersion,
+    Profile,
+    Proposal,
+    ProposalStatus,
+    ProposalType,
+    ResultStatus,
+    Role,
+    SpecificationDefinition,
+    SpecificationValue,
+    StructureNode,
 )
 
 User = get_user_model()
 
-class Gate1SpikeTests(TestCase):
+class Gate2CoreTests(TestCase):
     def setUp(self):
         self.inspector = User.objects.create_user("inspector", password="test-pass-123")
-        Profile.objects.create(user=self.inspector, role=Role.INSPECTOR)
         self.other = User.objects.create_user("other", password="test-pass-123")
-        Profile.objects.create(user=self.other, role=Role.INSPECTOR)
-        self.version = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
-        self.institution = Institution.objects.create(name="مؤسسة تجريبية")
+        self.published = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
+        self.institution = Institution.objects.create(
+            name="مؤسسة معتمدة",
+            verification_status=InstitutionVerificationStatus.VERIFIED,
+        )
+
+    def test_profile_is_created_automatically(self):
+        self.assertEqual(self.inspector.profile.role, Role.INSPECTOR)
 
     def test_dashboard_requires_authentication(self):
         response = self.client.get(reverse("dashboard"))
@@ -27,58 +45,150 @@ class Gate1SpikeTests(TestCase):
 
     def test_inspector_sees_only_own_inspections(self):
         own = Inspection.objects.create(
-            institution=self.institution, inspector=self.inspector,
-            master_version=self.version, visit_date=date(2026, 9, 18)
+            institution=self.institution,
+            inspector=self.inspector,
+            master_version=self.published,
+            visit_date=date(2026, 9, 18),
         )
         Inspection.objects.create(
-            institution=self.institution, inspector=self.other,
-            master_version=self.version, visit_date=date(2026, 9, 17)
+            institution=self.institution,
+            inspector=self.other,
+            master_version=self.published,
+            visit_date=date(2026, 9, 17),
         )
         self.client.login(username="inspector", password="test-pass-123")
         response = self.client.get(reverse("dashboard"))
         self.assertEqual(list(response.context["inspections"]), [own])
 
-    def test_recursive_structure(self):
-        root = StructureNode.objects.create(master_version=self.version, title="المجال")
-        child = StructureNode.objects.create(master_version=self.version, parent=root, title="تحت المجال")
-        grandchild = StructureNode.objects.create(master_version=self.version, parent=child, title="مصلحة")
-        self.assertEqual(grandchild.parent.parent, root)
-        self.assertEqual(root.children.first(), child)
+    def test_admin_sees_all_inspections(self):
+        admin = User.objects.create_superuser("admin", "admin@example.com", "test-pass-123")
+        self.assertEqual(admin.profile.role, Role.ADMIN)
+        Inspection.objects.create(
+            institution=self.institution,
+            inspector=self.inspector,
+            master_version=self.published,
+            visit_date=date(2026, 9, 18),
+        )
+        Inspection.objects.create(
+            institution=self.institution,
+            inspector=self.other,
+            master_version=self.published,
+            visit_date=date(2026, 9, 17),
+        )
+        self.client.login(username="admin", password="test-pass-123")
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.context["inspections"].count(), 2)
 
-    def test_dynamic_specification_definition(self):
-        node = StructureNode.objects.create(master_version=self.version, title="مديرية فرعية")
-        spec = SpecificationDefinition.objects.create(
-            node=node, title="عدد الموظفين", field_type=FieldType.NUMBER, required=True
+    def test_inspector_added_institution_is_pending_and_proposed(self):
+        self.client.login(username="inspector", password="test-pass-123")
+        response = self.client.post(
+            reverse("institution_create"),
+            {"name": "مؤسسة ميدانية", "institution_type": "CFPA", "commune": "تبسة"},
         )
-        self.assertEqual(spec.field_type, FieldType.NUMBER)
-        self.assertTrue(spec.required)
-
-    def test_snapshot_survives_master_edit(self):
-        node = StructureNode.objects.create(master_version=self.version, title="العنوان الأصلي")
-        inspection = Inspection.objects.create(
-            institution=self.institution, inspector=self.inspector,
-            master_version=self.version, visit_date=date(2026, 9, 18)
+        self.assertRedirects(response, reverse("institution_list"))
+        institution = Institution.objects.get(name="مؤسسة ميدانية")
+        self.assertEqual(institution.created_by, self.inspector)
+        self.assertEqual(
+            institution.verification_status,
+            InstitutionVerificationStatus.PENDING,
         )
-        snap = InspectionNode.objects.create(
-            inspection=inspection, source_node=node, title_snapshot=node.title
-        )
-        node.title = "عنوان معدل لاحقًا"
-        node.save(update_fields=["title"])
-        snap.refresh_from_db()
-        self.assertEqual(snap.title_snapshot, "العنوان الأصلي")
-
-    def test_not_applicable_is_valid_result_status(self):
-        self.assertIn(ResultStatus.NOT_APPLICABLE, ResultStatus.values)
-
-    def test_field_addition_can_become_pending_proposal(self):
-        inspection = Inspection.objects.create(
-            institution=self.institution, inspector=self.inspector,
-            master_version=self.version, visit_date=date(2026, 9, 18)
-        )
-        proposal = Proposal.objects.create(
-            proposal_type=ProposalType.ITEM,
-            source_inspection=inspection,
-            proposed_by=self.inspector,
-            payload={"title": "بند أضيف من الميدان"},
-        )
+        proposal = Proposal.objects.get(proposal_type=ProposalType.INSTITUTION)
         self.assertEqual(proposal.status, ProposalStatus.PENDING)
+        self.assertEqual(proposal.payload["institution_id"], institution.id)
+
+    def test_pending_institution_is_not_visible_to_other_inspector(self):
+        Institution.objects.create(
+            name="مؤسسة خاصة مؤقتًا",
+            created_by=self.inspector,
+            verification_status=InstitutionVerificationStatus.PENDING,
+        )
+        self.client.login(username="other", password="test-pass-123")
+        response = self.client.get(reverse("institution_list"))
+        self.assertNotContains(response, "مؤسسة خاصة مؤقتًا")
+
+    def test_pending_institution_is_visible_to_creator(self):
+        Institution.objects.create(
+            name="مؤسسة خاصة مؤقتًا",
+            created_by=self.inspector,
+            verification_status=InstitutionVerificationStatus.PENDING,
+        )
+        self.client.login(username="inspector", password="test-pass-123")
+        response = self.client.get(reverse("institution_list"))
+        self.assertContains(response, "مؤسسة خاصة مؤقتًا")
+
+    def test_duplicate_institution_name_is_rejected_case_insensitively(self):
+        Institution.objects.create(name="CFPA TEBESSA")
+        self.client.login(username="inspector", password="test-pass-123")
+        response = self.client.post(
+            reverse("institution_create"),
+            {"name": "cfpa tebessa", "institution_type": "", "commune": ""},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "هذه المؤسسة موجودة مسبقًا")
+
+    def test_new_inspection_pins_latest_published_master(self):
+        MasterVersion.objects.create(number=2, status=MasterStatus.DRAFT)
+        latest = MasterVersion.objects.create(number=3, status=MasterStatus.PUBLISHED)
+        self.client.login(username="inspector", password="test-pass-123")
+        response = self.client.post(
+            reverse("inspection_create"),
+            {"institution": self.institution.id, "visit_date": "2026-09-18"},
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        inspection = Inspection.objects.get(inspector=self.inspector)
+        self.assertEqual(inspection.master_version, latest)
+        self.assertEqual(inspection.status, "DRAFT")
+
+    def test_inspection_creation_requires_published_master(self):
+        MasterVersion.objects.all().delete()
+        self.client.login(username="inspector", password="test-pass-123")
+        response = self.client.get(reverse("inspection_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "لا توجد نسخة منشورة")
+
+    def test_recursive_structure(self):
+        root = StructureNode.objects.create(master_version=self.published, title="المجال")
+        child = StructureNode.objects.create(
+            master_version=self.published, parent=root, title="تحت المجال"
+        )
+        grandchild = StructureNode.objects.create(
+            master_version=self.published, parent=child, title="مصلحة"
+        )
+        self.assertEqual(grandchild.parent.parent, root)
+
+    def test_dynamic_specification_value_keeps_snapshot(self):
+        node = StructureNode.objects.create(
+            master_version=self.published, title="مديرية فرعية"
+        )
+        spec = SpecificationDefinition.objects.create(
+            node=node,
+            title="عدد الموظفين",
+            field_type=FieldType.NUMBER,
+            required=True,
+        )
+        inspection = Inspection.objects.create(
+            institution=self.institution,
+            inspector=self.inspector,
+            master_version=self.published,
+            visit_date=date(2026, 9, 18),
+        )
+        inspection_node = InspectionNode.objects.create(
+            inspection=inspection,
+            source_node=node,
+            title_snapshot=node.title,
+        )
+        value = SpecificationValue.objects.create(
+            inspection_node=inspection_node,
+            source_specification=spec,
+            title_snapshot=spec.title,
+            field_type_snapshot=spec.field_type,
+            value=14,
+        )
+        spec.title = "عدد العمال"
+        spec.save(update_fields=["title"])
+        value.refresh_from_db()
+        self.assertEqual(value.title_snapshot, "عدد الموظفين")
+        self.assertEqual(value.value, 14)
+
+    def test_not_applicable_is_a_standard_result_status(self):
+        self.assertIn(ResultStatus.NOT_APPLICABLE, ResultStatus.values)

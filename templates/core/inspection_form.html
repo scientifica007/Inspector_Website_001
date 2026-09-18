@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}زيارة جديدة{% endblock %}
+{% block content %}
+<section class="page-head"><div><p class="eyebrow">الزيارات</p><h1>زيارة جديدة</h1></div></section>
+<section class="card narrow-form">
+  {% if master_missing %}
+    <p class="error">لا توجد نسخة منشورة من مرجع التفتيش. يجب على Admin نشر نسخة قبل إنشاء زيارة.</p>
+  {% else %}
+    <p class="hint">سيتم ربط الزيارة بالمرجع المنشور v{{ master.number }}.</p>
+    <form method="post" class="stack-form">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
+      {% endfor %}
+      <div class="actions">
+        <button class="primary" type="submit">إنشاء المسودة</button>
+        <a class="secondary button-link" href="{% url 'dashboard' %}">إلغاء</a>
+      </div>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

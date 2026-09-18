@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}المؤسسات{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">المرجع التشغيلي</p><h1>المؤسسات</h1></div>
+  <a class="primary button-link" href="{% url 'institution_create' %}">+ إضافة مؤسسة</a>
+</section>
+<section class="card">
+  {% if institutions %}
+    <div class="list">
+    {% for institution in institutions %}
+      <article class="visit">
+        <div>
+          <strong>{{ institution.name }}</strong>
+          <small>{{ institution.institution_type|default:"—" }} · {{ institution.commune|default:"—" }}</small>
+        </div>
+        <span class="badge {% if institution.verification_status == 'PENDING' %}badge-pending{% endif %}">
+          {{ institution.get_verification_status_display }}
+        </span>
+      </article>
+    {% endfor %}
+    </div>
+  {% else %}
+    <p>لا توجد مؤسسات متاحة بعد.</p>
+  {% endif %}
+</section>
+{% endblock %}

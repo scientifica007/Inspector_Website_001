@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}إضافة مؤسسة{% endblock %}
+{% block content %}
+<section class="page-head"><div><p class="eyebrow">المؤسسات</p><h1>إضافة مؤسسة</h1></div></section>
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
+    {% endfor %}
+    <div class="actions">
+      <button class="primary" type="submit">حفظ</button>
+      <a class="secondary button-link" href="{% url 'institution_list' %}">إلغاء</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
