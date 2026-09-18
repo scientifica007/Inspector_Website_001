@@ -23,6 +23,7 @@ from .models import (
     Proposal,
     ProposalStatus,
     ProposalType,
+    ScopeOrigin,
     SpecificationDefinition,
     StructureNode,
 )
@@ -92,7 +93,7 @@ class Gate5GovernanceTests(TestCase):
             response,
             reverse("inspection_node", args=[self.inspection.pk, local.pk]),
         )
-        self.assertTrue(local.local_addition)
+        self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
         self.assertEqual(local.parent, self.snap_root)
         proposal = Proposal.objects.get(
             proposal_type=ProposalType.NODE,
@@ -127,9 +128,9 @@ class Gate5GovernanceTests(TestCase):
         )
         spec = self.snap_root.specification_values.get(title_snapshot="نوع المقر")
         item = self.snap_root.item_results.get(title_snapshot="بند ميداني")
-        self.assertTrue(spec.local_addition)
+        self.assertEqual(spec.scope_origin, ScopeOrigin.LOCAL)
         self.assertEqual(spec.options_snapshot, ["ملكية", "إيجار"])
-        self.assertTrue(item.local_addition)
+        self.assertEqual(item.scope_origin, ScopeOrigin.LOCAL)
         self.assertEqual(
             Proposal.objects.filter(source_inspection=self.inspection).count(),
             2,
@@ -206,13 +207,13 @@ class Gate5GovernanceTests(TestCase):
 
         local_item.refresh_from_db()
         self.assertEqual(local_item.title_snapshot, "عنوان أولي")
-        self.assertTrue(local_item.local_addition)
+        self.assertEqual(local_item.scope_origin, ScopeOrigin.LOCAL)
 
     def test_proposal_approval_is_idempotent(self):
         local = self.snap_root.item_results.create(
             title_snapshot="بند محلي",
             guidance_snapshot="",
-            local_addition=True,
+            scope_origin=ScopeOrigin.LOCAL,
             sort_order_snapshot=20,
         )
         proposal = Proposal.objects.create(
@@ -247,7 +248,7 @@ class Gate5GovernanceTests(TestCase):
         parent_local = self.snap_root.children.create(
             inspection=self.inspection,
             title_snapshot="أب محلي",
-            local_addition=True,
+            scope_origin=ScopeOrigin.LOCAL,
             sort_order_snapshot=20,
         )
         parent_proposal = Proposal.objects.create(
@@ -266,7 +267,7 @@ class Gate5GovernanceTests(TestCase):
         child_local = parent_local.children.create(
             inspection=self.inspection,
             title_snapshot="ابن محلي",
-            local_addition=True,
+            scope_origin=ScopeOrigin.LOCAL,
             sort_order_snapshot=10,
         )
         child_proposal = Proposal.objects.create(
@@ -302,7 +303,7 @@ class Gate5GovernanceTests(TestCase):
         local = self.snap_root.item_results.create(
             title_snapshot="يبقى في الزيارة",
             guidance_snapshot="",
-            local_addition=True,
+            scope_origin=ScopeOrigin.LOCAL,
             sort_order_snapshot=30,
         )
         proposal = Proposal.objects.create(
@@ -321,7 +322,7 @@ class Gate5GovernanceTests(TestCase):
         proposal.refresh_from_db()
         local.refresh_from_db()
         self.assertEqual(proposal.status, ProposalStatus.REJECTED)
-        self.assertTrue(local.local_addition)
+        self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
         self.assertEqual(local.title_snapshot, "يبقى في الزيارة")
 
     def test_rejected_institution_is_hidden_but_old_inspection_keeps_reference(self):
