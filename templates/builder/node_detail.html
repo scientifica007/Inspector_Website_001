@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ node.title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">المسودة v{{ draft.number }}</p>
+    <h1>{{ node.title }}</h1>
+    {% if node.description %}<p class="hint">{{ node.description }}</p>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'builder_home' %}">الشجرة</a>
+    <a class="primary button-link" href="{% url 'builder_node_edit' node.pk %}">تعديل</a>
+  </div>
+</section>
+
+<section class="builder-grid">
+  <article class="card">
+    <div class="section-title">
+      <h2>الفروع</h2>
+      <a href="{% url 'builder_node_create' %}?parent={{ node.pk }}">+ إضافة فرع</a>
+    </div>
+    {% for child in children %}
+      <div class="manage-row">
+        <a href="{% url 'builder_node' child.pk %}">{{ child.title }}</a>
+        <span class="badge {% if not child.active %}badge-pending{% endif %}">{% if child.active %}نشط{% else %}معطل{% endif %}</span>
+      </div>
+    {% empty %}<p class="hint">لا توجد فروع.</p>{% endfor %}
+  </article>
+
+  <article class="card">
+    <div class="section-title">
+      <h2>المواصفات</h2>
+      <a href="{% url 'builder_spec_create' node.pk %}">+ إضافة مواصفة</a>
+    </div>
+    {% for spec in specifications %}
+      <div class="manage-row">
+        <div>
+          <strong>{{ spec.title }}</strong>
+          <small>{{ spec.get_field_type_display }}{% if spec.required %} · إلزامية{% endif %}</small>
+        </div>
+        <div class="row-actions">
+          <a href="{% url 'builder_spec_edit' spec.pk %}">تعديل</a>
+          <form method="post" action="{% url 'builder_spec_toggle' spec.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">{% if spec.active %}تعطيل{% else %}تفعيل{% endif %}</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}<p class="hint">لا توجد مواصفات.</p>{% endfor %}
+  </article>
+
+  <article class="card builder-span">
+    <div class="section-title">
+      <h2>بنود التفتيش</h2>
+      <a href="{% url 'builder_item_create' node.pk %}">+ إضافة بند</a>
+    </div>
+    {% for item in items %}
+      <div class="manage-row">
+        <div>
+          <strong>{{ item.title }}</strong>
+          {% if item.guidance %}<small>{{ item.guidance }}</small>{% endif %}
+        </div>
+        <div class="row-actions">
+          <a href="{% url 'builder_item_edit' item.pk %}">تعديل</a>
+          <form method="post" action="{% url 'builder_item_toggle' item.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">{% if item.active %}تعطيل{% else %}تفعيل{% endif %}</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}<p class="hint">لا توجد بنود.</p>{% endfor %}
+  </article>
+</section>
+
+<section class="card node-settings">
+  <div><strong>الحالة:</strong> {% if node.active %}نشط{% else %}معطل{% endif %}</div>
+  <div><strong>النوع:</strong> {% if node.inspectable %}قابل للتفتيش مباشرة{% else %}حاوية تنظيمية{% endif %}</div>
+  <form method="post" action="{% url 'builder_node_toggle' node.pk %}">
+    {% csrf_token %}
+    <button class="danger-outline" type="submit">{% if node.active %}تعطيل العنصر{% else %}إعادة تفعيل العنصر{% endif %}</button>
+  </form>
+</section>
+{% endblock %}

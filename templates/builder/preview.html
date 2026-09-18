@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}معاينة المرجع{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">معاينة فقط</p>
+    <h1>المسودة v{{ draft.number }}</h1>
+    <p class="hint">هذه المعاينة لا تنشر المرجع ولا تسمح بتسجيل نتائج تفتيش.</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'builder_home' %}">العودة للبناء</a>
+</section>
+
+<div class="preview-list">
+{% for node, depth in tree %}
+  <section class="card preview-node" style="--depth:{{ depth }}">
+    <h2>{{ node.title }}</h2>
+    {% if node.description %}<p class="hint">{{ node.description }}</p>{% endif %}
+
+    {% if node.specifications.all %}
+      <div class="preview-section">
+        <h3>المواصفات</h3>
+        {% for spec in node.specifications.all %}
+          {% if spec.active %}
+          <div class="preview-field">
+            <strong>{{ spec.title }}</strong>
+            <span>{{ spec.get_field_type_display }}{% if spec.required %} · إلزامية{% endif %}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if node.items.all %}
+      <div class="preview-section">
+        <h3>بنود التفتيش</h3>
+        {% for item in node.items.all %}
+          {% if item.active %}
+          <div class="preview-item">
+            <strong>{{ item.title }}</strong>
+            <div class="status-demo" aria-label="الحالات المتاحة">
+              <span>غير مفحوص</span><span>غير معني</span><span>مطابق</span><span>ملاحظة</span><span>غير مطابق</span>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% empty %}
+  <section class="card"><p>لا توجد عناصر نشطة في المسودة.</p></section>
+{% endfor %}
+</div>
+{% endblock %}

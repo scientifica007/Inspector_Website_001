@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}هندسة المرجع{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin Builder</p>
+    <h1>هندسة مرجع التفتيش</h1>
+    {% if draft %}<p class="hint">المسودة الحالية: v{{ draft.number }}</p>{% endif %}
+  </div>
+  {% if draft %}
+    <div class="actions">
+      <a class="secondary button-link" href="{% url 'builder_preview' %}">معاينة</a>
+      <a class="primary button-link" href="{% url 'builder_node_create' %}">+ عنصر رئيسي</a>
+    </div>
+  {% endif %}
+</section>
+
+{% if not draft %}
+<section class="card empty-builder">
+  <h2>لا توجد مسودة قابلة للتحرير</h2>
+  <p>أنشئ مسودة جديدة. إذا كان هناك مرجع منشور فسيتم نسخه إلى المسودة دون تعديل الأصل.</p>
+  <form method="post" action="{% url 'builder_draft_create' %}">
+    {% csrf_token %}
+    <button class="primary" type="submit">إنشاء مسودة</button>
+  </form>
+</section>
+{% else %}
+<section class="card">
+  <div class="builder-summary">
+    <strong>شجرة المرجع</strong>
+    <span>{{ tree|length }} عنصر</span>
+  </div>
+  {% if tree %}
+    <div class="tree-list">
+      {% for node, depth in tree %}
+        <a class="tree-row {% if not node.active %}muted-row{% endif %}" style="--depth:{{ depth }}" href="{% url 'builder_node' node.pk %}">
+          <span class="tree-branch" aria-hidden="true">↳</span>
+          <span>
+            <strong>{{ node.title }}</strong>
+            <small>{% if node.inspectable %}قابل للتفتيش{% else %}حاوية تنظيمية{% endif %}{% if not node.active %} · معطل{% endif %}</small>
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>المسودة فارغة.</p>
+      <a class="primary button-link" href="{% url 'builder_node_create' %}">أضف أول عنصر</a>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
