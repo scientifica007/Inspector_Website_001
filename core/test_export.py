@@ -21,6 +21,7 @@ from .models import (
     Proposal,
     ProposalStatus,
     ProposalType,
+    ScopeOrigin,
     SpecificationDefinition,
     StructureNode,
 )
@@ -85,11 +86,12 @@ class ExportTests(TestCase):
         first = build_inspection_export(self.inspection)
         second = build_inspection_export(self.inspection)
         self.assertEqual(first, second)
-        self.assertEqual(first["schema"], "inspection-export-v1")
+        self.assertEqual(first["schema"], "inspection-export-v2")
         payload = first["inspection"]
         self.assertEqual(payload["institution"]["name"], "مؤسسة تجريبية عربية")
         self.assertEqual(payload["inspector"]["username"], "export-inspector")
         self.assertEqual(payload["master_version"]["number"], 1)
+        self.assertEqual(payload["scope_mode"], "SELECTIVE")
         self.assertEqual(payload["nodes"][0]["title"], "المجال الأول")
         self.assertEqual(payload["nodes"][0]["children"][0]["title"], "تحت المجال")
         self.assertEqual(payload["nodes"][0]["specifications"][0]["value"], 14)
@@ -116,7 +118,7 @@ class ExportTests(TestCase):
             inspection_node=self.snap_root,
             title_snapshot="بند محلي",
             guidance_snapshot="توجيه محلي",
-            local_addition=True,
+            scope_origin=ScopeOrigin.LOCAL,
             sort_order_snapshot=99,
         )
         proposal = Proposal.objects.create(
@@ -129,7 +131,8 @@ class ExportTests(TestCase):
         )
         items = build_inspection_export(self.inspection)["inspection"]["nodes"][0]["checklist_items"]
         exported = next(item for item in items if item["title"] == "بند محلي")
-        self.assertTrue(exported["local_addition"])
+        self.assertEqual(exported["scope"]["origin"], ScopeOrigin.LOCAL)
+        self.assertEqual(exported["scope"]["state"], "ACTIVE")
         self.assertEqual(exported["proposal"]["proposal_id"], proposal.id)
         self.assertEqual(exported["proposal"]["status"], ProposalStatus.PENDING)
 
