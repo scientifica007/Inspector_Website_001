@@ -1,34 +1,42 @@
 # CHANGELOG
 
-## 2026-09-18 — Gate 3 Admin Builder
+## 2026-09-18 — Gate 4 Inspector Field Workflow
 
 ### Added
-- Admin-only reference Builder.
-- Draft creation and clone-from-latest-published service.
-- Recursive tree navigation.
-- Structure node create/edit/move/order/activate/deactivate.
-- Cross-version and cycle protections.
-- Dynamic specification editor and select options.
-- Checklist item editor.
-- Read-only inspector-style preview.
-- RTL/mobile Builder UI.
+- Stable inspection snapshot materialization at visit creation.
+- Snapshot metadata for dynamic specifications and item guidance.
+- Recursive visit navigation.
+- Dynamic input support for all V1 field types.
+- Five-state checklist editing.
+- Item observations.
+- Node-level observations and recommendations.
+- General observations and recommendations.
+- Progress indicator.
+- Explicit completion confirmation and completed-visit edit lock.
+- Admin read-only viewing of inspectors' visits.
+- RTL/mobile field workflow.
 
 ### Verification
 - Migration drift check: PASS.
 - Django system check: PASS.
 - Migrations: PASS.
-- Automated tests: 23/23 PASS.
-- GitHub Actions run: 35333138971.
+- Automated tests: 33/33 PASS.
+- Push CI: 35335170791.
+- PR CI: 35335189021.
 
 ### Project control
-- Gate 3 branch: `gate-3/admin-builder`
-- Gate 3 PR: #7
-- Gate 3 issue: #6
+- Gate 4 branch: `gate-4/inspector-field-workflow`
+- Gate 4 PR: #9
+- Gate 4 issue: #8
 
 ### Next
-Gate 4 — Inspector Field Workflow.
+Gate 5 — local additions, Proposal Inbox moderation, and version publish workflow.
 
 ---
+
+## 2026-09-18 — Gate 3 Admin Builder
+- 23/23 tests PASS.
+- PR #7 merged as `e55a81c18451ab42eb8da33a34ba98db4efd6e3b`.
 
 ## 2026-09-18 — Gate 2 Core Data & Authentication
 - 13/13 tests PASS.
