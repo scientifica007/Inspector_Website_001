@@ -121,3 +121,34 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .theme-control span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .theme-control select{max-width:132px}
 }
+
+
+/* Selective visit scope */
+.scope-help{margin-bottom:16px}
+.scope-help p{margin-bottom:0}
+.scope-reference{display:grid;gap:12px;padding-bottom:48px}
+.scope-node{margin-inline-start:min(calc(var(--depth) * 14px),42px)}
+.scope-node-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.scope-node-head h2{margin:0 0 5px;font-size:1.05rem}
+.scope-node-head p{margin:.25rem 0}
+.scope-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.scope-badge-context{background:var(--theme-hover);color:var(--theme-muted);border:1px solid var(--theme-border)}
+.scope-badge-excluded{background:#fff5df;color:#805400;border:1px solid #f0d89e}
+.scope-badge-locked{background:#f5f1ff;color:#573294;border:1px solid #ded0f4}
+.scope-actions form,.scope-entry form{margin:0}
+.scope-group{border-top:1px solid var(--theme-border);margin-top:14px;padding-top:12px}
+.scope-group h3{font-size:.92rem;margin:0 0 8px;color:var(--theme-muted)}
+.scope-entry{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--theme-border)}
+.scope-entry:last-child{border-bottom:0}
+.scope-entry small{display:block;margin-top:3px}
+.scope-entry-state{display:inline-block;margin-inline-start:6px;font-size:.7rem;color:var(--theme-accent-dark)}
+.scope-entry-state.excluded{color:#805400}
+.scope-entry-state.locked{color:#573294}
+.scope-context-row{cursor:default;background:var(--theme-hover)}
+@media(max-width:700px){
+  .scope-node{margin-inline-start:min(calc(var(--depth) * 7px),21px)}
+  .scope-node-head,.scope-entry{flex-direction:column}
+  .scope-actions,.scope-actions form,.scope-actions button{width:100%}
+  .scope-entry>div:last-child,.scope-entry>div:last-child form{width:100%}
+  .scope-entry .text-action{width:100%;text-align:start;padding:5px 0}
+}
