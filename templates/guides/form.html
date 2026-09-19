@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin · Guides</p>
+    <h1>{{ title }}</h1>
+    <p class="hint">المرجع يحدد المجال المنطقي الذي ستُحل عليه Stable IDs عند تطبيق الدليل.</p>
+  </div>
+  <a class="secondary button-link" href="{% if guide %}{% url 'guide_detail' guide.pk %}{% else %}{% url 'guide_list' %}{% endif %}">إلغاء</a>
+</section>
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+    <button class="primary" type="submit">حفظ</button>
+  </form>
+</section>
+{% endblock %}

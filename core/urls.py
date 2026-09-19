@@ -1,9 +1,16 @@
 from django.urls import path
-from . import builder_views, export_views, governance_views, local_views, reference_views, views
+from . import builder_views, export_views, governance_views, guide_views, local_views, reference_views, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("health/", views.health, name="health"),
+    path("guides/", guide_views.guide_list, name="guide_list"),
+    path("guides/new/", guide_views.guide_create, name="guide_create"),
+    path("guides/<int:pk>/", guide_views.guide_detail, name="guide_detail"),
+    path("guides/<int:pk>/edit/", guide_views.guide_edit, name="guide_edit"),
+    path("guides/<int:pk>/delete/", guide_views.guide_delete, name="guide_delete"),
+    path("guides/<int:pk>/entries/add/", guide_views.guide_entry_add, name="guide_entry_add"),
+    path("guides/<int:pk>/entries/<int:entry_pk>/delete/", guide_views.guide_entry_delete, name="guide_entry_delete"),
     path("references/", views.reference_list, name="reference_list"),
     path("references/private/new/", reference_views.private_reference_create, name="private_reference_create"),
     path("references/<int:pk>/", reference_views.reference_detail, name="reference_detail"),
@@ -17,6 +24,8 @@ urlpatterns = [
     path("inspections/new/", views.inspection_create, name="inspection_create"),
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
     path("inspections/<int:pk>/delete/", views.inspection_delete, name="inspection_delete"),
+    path("inspections/<int:pk>/guides/", guide_views.inspection_guides, name="inspection_guides"),
+    path("inspections/<int:pk>/guides/<int:guide_pk>/apply/", guide_views.apply_inspection_guide, name="apply_inspection_guide"),
     path("inspections/<int:pk>/prepare/", views.inspection_prepare, name="inspection_prepare"),
     path("inspections/<int:pk>/execute/", views.inspection_execute, name="inspection_execute"),
     path("inspections/<int:pk>/scope/", views.inspection_scope, name="inspection_scope"),

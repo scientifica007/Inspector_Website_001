@@ -43,6 +43,18 @@
 - Added `InspectionNode.inspectable_snapshot` so visit-local semantics no longer depend on legacy Proposal payloads.
 - Legacy NODE/DESCRIPTION/ITEM Proposal records remain stored for history but are hidden from the active Admin inbox and cannot be approved through the A-C3 flow.
 
+### B-GUIDE-01 — Optional Reusable Guides
+- Added reusable Admin-authored Guides bound to one SHARED reference.
+- Guide entries target a full branch, one description or one checklist item by stable logical ID.
+- Applying a Guide is explicit, optional and idempotent; it never creates a visit-level mode.
+- New scope added by a Guide uses `origin=GUIDE`, `scope_locked=false` and `completion_required=false`.
+- Existing visit snapshots keep their original provenance when a Guide overlaps or reactivates them.
+- Guide resolution occurs against the visit's frozen reference copy, not the live source reference.
+- Entries absent from an older frozen draft are skipped explicitly and counted instead of mutating the draft source.
+- Added `GuideApplication` with a frozen Guide snapshot and per-entry application results.
+- Deleting/editing a Guide or deleting its source reference does not rewrite visits that already applied it.
+- Migration `0009_guides` is additive and does not rewrite existing inspections.
+
 ### A-C3.3 — Frozen Draft Source & Draft Lifecycle
 - Creating a visit from a reference now freezes a hidden per-visit reference snapshot before any scope selection.
 - The original reference is recorded separately as `source_reference`; editing or deleting it later cannot change the visit draft choices.

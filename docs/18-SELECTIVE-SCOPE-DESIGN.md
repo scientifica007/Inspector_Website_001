@@ -133,3 +133,20 @@ Guides and Assignments must build on this scope model rather than reintroducing 
 11. Local visit content stays local unless the inspector deliberately uses the private-reference workflow.
 12. Editing or deleting an original reference does not rewrite an existing visit.
 13. COMPLETED inspection data is immutable and non-deletable.
+
+
+## 14. B-GUIDE-01 implementation contract
+
+Status: **ADOPTED**
+
+- Guides are optional reusable scope recommendations.
+- A Guide belongs to one SHARED reference.
+- Guide targets use stable logical IDs.
+- Applying a Guide is explicit and idempotent.
+- Newly added content uses GUIDE origin.
+- Existing content keeps its previous origin.
+- Guide application never enables scope_locked or completion_required.
+- Matching is performed against the frozen per-visit reference.
+- Missing targets are skipped and counted; the frozen source is never refreshed implicitly.
+- GuideApplication preserves application-time Guide metadata.
+- Required/locked semantics remain exclusively in Stage C Assignments.

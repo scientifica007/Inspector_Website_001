@@ -195,3 +195,42 @@
 10. NOT_APPLICABLE محسومة للـProgress وتستبعد من Compliance denominator.
 11. العنصر المحلي لا يصبح مشتركًا دون قرار Admin.
 12. Proposal ليست Inspection Data وليست Master Content.
+
+
+---
+
+## 14. Guide
+
+Guide كيان توصية اختياري مرتبط بـReference SHARED واحدة.
+
+الحقول الأساسية:
+- reference
+- name
+- description
+- created_by
+- created_at / updated_at
+
+## 15. GuideEntry
+
+كل GuideEntry يستهدف عنصرًا منطقيًا بواسطة:
+- entry_type: BRANCH | SPECIFICATION | ITEM
+- stable_id
+- label_snapshot
+- sort_order
+
+لا يوجد FK مباشر إلى Node/Description/Item حتى يبقى GuideEntry قابلًا للتفسير إذا حُذف تعريف بعينه من المرجع. عند التطبيق تُحل Stable ID داخل اللقطة المجمدة للزيارة.
+
+## 16. GuideApplication
+
+يمثل واقعة تطبيق Guide على Inspection:
+- inspection
+- guide إن كان ما يزال موجودًا
+- guide_name_snapshot
+- guide_snapshot
+- applied_by / applied_at
+- applied_count / skipped_count
+- result_details
+
+القيد الفريد Inspection + Guide يجعل التطبيق idempotent.
+
+GuideApplication سجل تطبيق، وليس مصدر الحقيقة لمحتوى الزيارة؛ محتوى الزيارة يبقى في Inspection Snapshots نفسها.

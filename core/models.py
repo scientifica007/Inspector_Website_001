@@ -31,6 +31,12 @@ class ReferenceVisibility(models.TextChoices):
     PRIVATE = "PRIVATE", "خاص"
     SNAPSHOT = "SNAPSHOT", "لقطة زيارة داخلية"
 
+class GuideEntryType(models.TextChoices):
+    BRANCH = "BRANCH", "فرع كامل"
+    SPECIFICATION = "SPECIFICATION", "وصف"
+    ITEM = "ITEM", "بند"
+
+
 class ReferenceSubmissionStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
     APPROVED = "APPROVED", "معتمد"
@@ -381,3 +387,90 @@ class ReferenceSubmission(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-id"]
+
+
+class Guide(models.Model):
+    reference = models.ForeignKey(
+        MasterVersion,
+        on_delete=models.CASCADE,
+        related_name="guides",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="guides_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+
+    def __str__(self):
+        return self.name
+
+
+class GuideEntry(models.Model):
+    guide = models.ForeignKey(
+        Guide,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    entry_type = models.CharField(
+        max_length=20,
+        choices=GuideEntryType.choices,
+    )
+    stable_id = models.UUIDField()
+    label_snapshot = models.CharField(max_length=500)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guide", "entry_type", "stable_id"],
+                name="uq_guide_entry_target",
+            ),
+        ]
+
+
+class GuideApplication(models.Model):
+    inspection = models.ForeignKey(
+        Inspection,
+        on_delete=models.CASCADE,
+        related_name="guide_applications",
+    )
+    guide = models.ForeignKey(
+        Guide,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="applications",
+    )
+    guide_name_snapshot = models.CharField(max_length=255)
+    guide_snapshot = models.JSONField(default=dict)
+    applied_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="guide_applications",
+    )
+    applied_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+    result_details = models.JSONField(default=list, blank=True)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-applied_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspection", "guide"],
+                condition=models.Q(guide__isnull=False),
+                name="uq_inspection_guide_application",
+            ),
+        ]

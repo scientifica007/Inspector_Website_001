@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ guide.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">دليل اختياري · {{ guide.reference.name }}</p>
+    <h1>{{ guide.name }}</h1>
+    {% if guide.description %}<p class="hint">{{ guide.description }}</p>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'guide_list' %}">كل الأدلة</a>
+    <a class="secondary button-link" href="{% url 'guide_edit' guide.pk %}">تعديل الاسم والوصف</a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <h2>اختيارات الدليل</h2>
+    <span class="hint">{{ entries|length }} اقتراحًا</span>
+  </div>
+  {% for entry in entries %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ entry.label_snapshot }}</strong>
+        <small class="hint">{{ entry.get_entry_type_display }} · Stable ID: {{ entry.stable_id }}</small>
+      </div>
+      <form method="post" action="{% url 'guide_entry_delete' guide.pk entry.pk %}">
+        {% csrf_token %}
+        <button class="text-action danger-text" type="submit">إزالة</button>
+      </form>
+    </div>
+  {% empty %}
+    <p class="hint">لم تُضف اقتراحات بعد. اختر من المرجع أدناه.</p>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <div class="section-title">
+    <h2>إضافة من المرجع</h2>
+    <span class="hint">يمكن اختيار فرع كامل أو وصف منفرد أو بند منفرد.</span>
+  </div>
+
+  {% for node, depth in tree %}
+    <article class="scope-node" style="--depth:{{ depth }}">
+      <div class="scope-node-head">
+        <div>
+          <strong>{{ node.title }}</strong>
+          {% if node.description %}<small class="hint">{{ node.description }}</small>{% endif %}
+        </div>
+        <form method="post" action="{% url 'guide_entry_add' guide.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="entry_type" value="BRANCH">
+          <input type="hidden" name="target_id" value="{{ node.pk }}">
+          {% if node.stable_id|stringformat:"s" in branch_ids %}
+            <button class="secondary" type="submit" disabled>الفرع مضاف</button>
+          {% else %}
+            <button class="secondary" type="submit">+ الفرع كاملًا</button>
+          {% endif %}
+        </form>
+      </div>
+
+      {% if node.specifications.all %}
+      <div class="scope-group">
+        <h3>الأوصاف</h3>
+        {% for spec in node.specifications.all %}
+          {% if spec.active %}
+          <div class="scope-entry">
+            <span>{{ spec.title }}</span>
+            <form method="post" action="{% url 'guide_entry_add' guide.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="entry_type" value="SPECIFICATION">
+              <input type="hidden" name="target_id" value="{{ spec.pk }}">
+              {% if spec.stable_id|stringformat:"s" in spec_ids %}
+                <button class="text-action" type="submit" disabled>مضاف</button>
+              {% else %}
+                <button class="text-action" type="submit">+ إضافة</button>
+              {% endif %}
+            </form>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if node.items.all %}
+      <div class="scope-group">
+        <h3>البنود</h3>
+        {% for item in node.items.all %}
+          {% if item.active %}
+          <div class="scope-entry">
+            <span>{{ item.title }}</span>
+            <form method="post" action="{% url 'guide_entry_add' guide.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="entry_type" value="ITEM">
+              <input type="hidden" name="target_id" value="{{ item.pk }}">
+              {% if item.stable_id|stringformat:"s" in item_ids %}
+                <button class="text-action" type="submit" disabled>مضاف</button>
+              {% else %}
+                <button class="text-action" type="submit">+ إضافة</button>
+              {% endif %}
+            </form>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </article>
+  {% empty %}
+    <p>المرجع لا يحتوي عناصر نشطة.</p>
+  {% endfor %}
+</section>
+
+<section class="card danger-zone">
+  <h2>حذف الدليل</h2>
+  <p class="hint">الحذف يمنع التطبيقات المستقبلية فقط. الزيارات التي سبق أن طبقته لا تتغير.</p>
+  <form method="post" action="{% url 'guide_delete' guide.pk %}">
+    {% csrf_token %}
+    <button class="danger-outline" type="submit">حذف الدليل</button>
+  </form>
+</section>
+{% endblock %}
