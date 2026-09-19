@@ -38,7 +38,10 @@ def can_manage_reference(user, reference):
     if is_admin(user):
         return (
             reference.visibility == ReferenceVisibility.SHARED
-            or reference.owner_id is None
+            or (
+                reference.visibility == ReferenceVisibility.PRIVATE
+                and reference.owner_id is None
+            )
         )
     return (
         reference.visibility == ReferenceVisibility.PRIVATE

@@ -15,6 +15,7 @@ from core.models import (
     SpecificationDefinition,
     StructureNode,
 )
+from core.reference_library import freeze_reference_for_inspection
 from core.services import materialize_inspection
 
 User = get_user_model()
@@ -142,10 +143,12 @@ class Command(BaseCommand):
             sort_order=30,
         )
 
+        frozen_reference = freeze_reference_for_inspection(master)
         inspection = Inspection.objects.create(
             institution=institution,
             inspector=user,
-            master_version=master,
+            master_version=frozen_reference,
+            source_reference=master,
             reference_name_snapshot=master.name,
             visit_date=timezone.localdate(),
         )

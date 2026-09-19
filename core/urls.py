@@ -16,6 +16,7 @@ urlpatterns = [
     path("inspections/", views.inspection_list, name="inspection_list"),
     path("inspections/new/", views.inspection_create, name="inspection_create"),
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
+    path("inspections/<int:pk>/delete/", views.inspection_delete, name="inspection_delete"),
     path("inspections/<int:pk>/prepare/", views.inspection_prepare, name="inspection_prepare"),
     path("inspections/<int:pk>/execute/", views.inspection_execute, name="inspection_execute"),
     path("inspections/<int:pk>/scope/", views.inspection_scope, name="inspection_scope"),

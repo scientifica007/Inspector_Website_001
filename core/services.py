@@ -27,7 +27,10 @@ def visible_references(user):
     if user.is_superuser or getattr(getattr(user, "profile", None), "role", None) == Role.ADMIN:
         return references.filter(
             models.Q(visibility=ReferenceVisibility.SHARED)
-            | models.Q(owner__isnull=True)
+            | models.Q(
+                visibility=ReferenceVisibility.PRIVATE,
+                owner__isnull=True,
+            )
         )
     return references.filter(
         models.Q(visibility=ReferenceVisibility.SHARED)

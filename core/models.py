@@ -29,6 +29,7 @@ class MasterStatus(models.TextChoices):
 class ReferenceVisibility(models.TextChoices):
     SHARED = "SHARED", "مشترك"
     PRIVATE = "PRIVATE", "خاص"
+    SNAPSHOT = "SNAPSHOT", "لقطة زيارة داخلية"
 
 class ReferenceSubmissionStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
@@ -190,6 +191,13 @@ class Inspection(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="inspections",
+    )
+    source_reference = models.ForeignKey(
+        MasterVersion,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="source_inspections",
     )
     reference_name_snapshot = models.CharField(max_length=255, blank=True)
     visit_date = models.DateField()

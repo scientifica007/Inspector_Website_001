@@ -129,7 +129,7 @@ def build_inspection_export(inspection):
                 "username": inspection.inspector.username,
             },
             "reference": {
-                "id": inspection.master_version_id,
+                "id": inspection.source_reference_id,
                 "name": inspection.reference_name_snapshot,
             },
             "general_observations": inspection.general_observations,

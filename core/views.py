@@ -22,6 +22,7 @@ from .models import (
     InstitutionVerificationStatus,
     MasterVersion,
     Proposal,
+    ReferenceVisibility,
     ProposalType,
     ResultStatus,
     Role,
@@ -31,6 +32,7 @@ from .models import (
     SpecificationValue,
     StructureNode,
 )
+from .reference_library import freeze_reference_for_inspection
 from .services import (
     active_item_results,
     add_scope_branch,
@@ -204,13 +206,18 @@ def inspection_create(request):
             inspection = form.save(commit=False)
             inspection.inspector = request.user
             reference = form.cleaned_data["reference"]
-            inspection.master_version = reference
+            inspection.source_reference = reference
             inspection.reference_name_snapshot = reference.name if reference else ""
+            inspection.master_version = (
+                freeze_reference_for_inspection(reference)
+                if reference
+                else None
+            )
             inspection.save()
         if reference:
             messages.success(
                 request,
-                f"أنشئت مسودة الزيارة وربطت بالمرجع «{reference.name}» كمصدر للاختيار.",
+                f"أنشئت مسودة الزيارة من «{reference.name}» مع لقطة مستقلة لا تتغير بتعديل المرجع الأصلي.",
             )
         else:
             messages.success(
@@ -224,6 +231,39 @@ def inspection_create(request):
         "core/inspection_form.html",
         {"form": form},
     )
+
+@login_required
+def inspection_delete(request, pk):
+    inspection = inspection_for_user(request.user, pk)
+    if inspection.inspector_id != request.user.id:
+        raise PermissionDenied("حذف المسودة متاح للمفتش صاحبها فقط.")
+    if inspection.status != InspectionStatus.DRAFT:
+        return HttpResponse(
+            "الزيارة المكتملة سجل مهني محفوظ ولا يمكن حذفها.",
+            status=409,
+        )
+
+    frozen_reference = inspection.master_version
+    if request.method == "POST":
+        with transaction.atomic():
+            inspection_id = inspection.id
+            inspection.proposals.all().delete()
+            inspection.delete()
+            if (
+                frozen_reference
+                and frozen_reference.visibility == ReferenceVisibility.SNAPSHOT
+                and not frozen_reference.inspections.exists()
+            ):
+                frozen_reference.delete()
+        messages.success(request, f"تم حذف مسودة الزيارة #{inspection_id}.")
+        return redirect("inspection_list")
+
+    return render(
+        request,
+        "core/inspection_delete_confirm.html",
+        {"inspection": inspection},
+    )
+
 
 @login_required
 def inspection_detail(request, pk):

@@ -5,7 +5,7 @@
   <div>
     <p class="eyebrow">الزيارات</p>
     <h1>زيارة جديدة</h1>
-    <p class="hint">اختر مرجعًا من المكتبة أو ابدأ مسودة فارغة.</p>
+    <p class="hint">اختر مرجعًا من المكتبة أو ابدأ مسودة فارغة. عند الاختيار تُنشأ للزيارة لقطة مستقلة من المرجع.</p>
   </div>
 </section>
 <section class="card narrow-form">
@@ -16,7 +16,7 @@
       <label>
         {{ field.label }}
         {{ field }}
-        {% if field.name == "reference" %}<small class="hint">اختيار المرجع لا يمنعك من تعديل نطاق الزيارة أو إضافة محتوى محلي.</small>{% endif %}
+        {% if field.name == "reference" %}<small class="hint">يُستخدم المرجع كنقطة بداية مجمدة لهذه المسودة؛ تعديل المرجع الأصلي لاحقًا لا يغيّر الزيارة.</small>{% endif %}
         {{ field.errors }}
       </label>
     {% endfor %}

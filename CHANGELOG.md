@@ -43,6 +43,16 @@
 - Added `InspectionNode.inspectable_snapshot` so visit-local semantics no longer depend on legacy Proposal payloads.
 - Legacy NODE/DESCRIPTION/ITEM Proposal records remain stored for history but are hidden from the active Admin inbox and cannot be approved through the A-C3 flow.
 
+### A-C3.3 — Frozen Draft Source & Draft Lifecycle
+- Creating a visit from a reference now freezes a hidden per-visit reference snapshot before any scope selection.
+- The original reference is recorded separately as `source_reference`; editing or deleting it later cannot change the visit draft choices.
+- Internal snapshots use `visibility=SNAPSHOT` and are excluded from all user/admin reference libraries and editor routes.
+- Existing linked inspections are migrated to independent internal snapshots by `0008_freeze_inspection_reference`, including rewiring existing selected node/description/item source links to the frozen copy.
+- Stable IDs are preserved inside the frozen copy for traceability while database row identities remain independent.
+- Draft owners can delete DRAFT inspections; deletion removes the draft, its visit-bound historical proposals and its internal snapshot only.
+- COMPLETED inspections remain non-editable and cannot be deleted.
+- Export reference ID now represents the original source reference when it still exists; the internal snapshot ID is not exposed as the business reference identity.
+
 ### Changed
 - New visits start with an empty selective scope and may choose an available reference explicitly.
 - The Master is treated as a reference library rather than a mandatory full-visit template.

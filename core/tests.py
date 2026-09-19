@@ -16,6 +16,7 @@ from .models import (
     Proposal,
     ProposalStatus,
     ProposalType,
+    ReferenceVisibility,
     ResultStatus,
     Role,
     SpecificationDefinition,
@@ -150,7 +151,12 @@ class Gate2CoreTests(TestCase):
             response,
             reverse("inspection_detail", args=[inspection.pk]),
         )
-        self.assertEqual(inspection.master_version, second)
+        self.assertEqual(inspection.source_reference, second)
+        self.assertNotEqual(inspection.master_version_id, second.id)
+        self.assertEqual(
+            inspection.master_version.visibility,
+            ReferenceVisibility.SNAPSHOT,
+        )
         self.assertEqual(inspection.reference_name_snapshot, "مرجع ثان")
         self.assertEqual(inspection.status, "DRAFT")
 
@@ -170,6 +176,7 @@ class Gate2CoreTests(TestCase):
             reverse("inspection_detail", args=[inspection.pk]),
         )
         self.assertIsNone(inspection.master_version_id)
+        self.assertIsNone(inspection.source_reference_id)
         self.assertEqual(inspection.reference_name_snapshot, "")
 
     def test_recursive_structure(self):

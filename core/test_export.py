@@ -21,6 +21,7 @@ from .models import (
     Proposal,
     ProposalStatus,
     ProposalType,
+    ReferenceVisibility,
     ScopeOrigin,
     SpecificationDefinition,
     StructureNode,
@@ -229,6 +230,11 @@ class DemoSeedTests(TestCase):
         )
         inspection = Inspection.objects.get(inspector__username="pilot-test")
         self.assertGreater(inspection.inspection_nodes.count(), 0)
+        self.assertIsNotNone(inspection.source_reference_id)
+        self.assertEqual(
+            inspection.master_version.visibility,
+            ReferenceVisibility.SNAPSHOT,
+        )
         self.assertIn("Password was accepted but is not echoed.", out.getvalue())
 
     @override_settings(DEBUG=True)

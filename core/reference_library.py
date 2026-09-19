@@ -18,6 +18,7 @@ from .services import next_reference_number
 def serialize_reference(reference):
     def serialize_node(node):
         return {
+            "stable_id": str(node.stable_id),
             "title": node.title,
             "description": node.description,
             "inspectable": node.inspectable,
@@ -25,6 +26,7 @@ def serialize_reference(reference):
             "active": node.active,
             "descriptions": [
                 {
+                    "stable_id": str(spec.stable_id),
                     "title": spec.title,
                     "field_type": spec.field_type,
                     "required": spec.required,
@@ -37,6 +39,7 @@ def serialize_reference(reference):
             ],
             "items": [
                 {
+                    "stable_id": str(item.stable_id),
                     "title": item.title,
                     "guidance": item.guidance,
                     "sort_order": item.sort_order,
@@ -57,36 +60,48 @@ def serialize_reference(reference):
     }
 
 
-def _create_tree(reference, snapshot):
+def _create_tree(reference, snapshot, *, preserve_stable_ids=False):
     def create_node(data, parent=None):
-        node = StructureNode.objects.create(
-            master_version=reference,
-            parent=parent,
-            title=data["title"],
-            description=data.get("description", ""),
-            inspectable=data.get("inspectable", True),
-            sort_order=data.get("sort_order", 0),
-            active=data.get("active", True),
-        )
+        node_kwargs = {
+            "master_version": reference,
+            "parent": parent,
+            "title": data["title"],
+            "description": data.get("description", ""),
+            "inspectable": data.get("inspectable", True),
+            "sort_order": data.get("sort_order", 0),
+            "active": data.get("active", True),
+        }
+        if preserve_stable_ids and data.get("stable_id"):
+            node_kwargs["stable_id"] = data["stable_id"]
+        node = StructureNode.objects.create(**node_kwargs)
+
         for spec in data.get("descriptions", []):
-            SpecificationDefinition.objects.create(
-                node=node,
-                title=spec["title"],
-                field_type=spec["field_type"],
-                required=spec.get("required", False),
-                options=list(spec.get("options", [])),
-                help_text=spec.get("help_text", ""),
-                sort_order=spec.get("sort_order", 0),
-                active=spec.get("active", True),
-            )
+            spec_kwargs = {
+                "node": node,
+                "title": spec["title"],
+                "field_type": spec["field_type"],
+                "required": spec.get("required", False),
+                "options": list(spec.get("options", [])),
+                "help_text": spec.get("help_text", ""),
+                "sort_order": spec.get("sort_order", 0),
+                "active": spec.get("active", True),
+            }
+            if preserve_stable_ids and spec.get("stable_id"):
+                spec_kwargs["stable_id"] = spec["stable_id"]
+            SpecificationDefinition.objects.create(**spec_kwargs)
+
         for item in data.get("items", []):
-            ChecklistItem.objects.create(
-                node=node,
-                title=item["title"],
-                guidance=item.get("guidance", ""),
-                sort_order=item.get("sort_order", 0),
-                active=item.get("active", True),
-            )
+            item_kwargs = {
+                "node": node,
+                "title": item["title"],
+                "guidance": item.get("guidance", ""),
+                "sort_order": item.get("sort_order", 0),
+                "active": item.get("active", True),
+            }
+            if preserve_stable_ids and item.get("stable_id"):
+                item_kwargs["stable_id"] = item["stable_id"]
+            ChecklistItem.objects.create(**item_kwargs)
+
         for child in data.get("children", []):
             create_node(child, node)
         return node
@@ -96,7 +111,9 @@ def _create_tree(reference, snapshot):
 
 
 @transaction.atomic
-def create_reference_from_snapshot(*, snapshot, name, visibility, owner=None):
+def create_reference_from_snapshot(
+    *, snapshot, name, visibility, owner=None, preserve_stable_ids=False
+):
     reference = MasterVersion.objects.create(
         number=next_reference_number(),
         name=name.strip(),
@@ -108,8 +125,28 @@ def create_reference_from_snapshot(*, snapshot, name, visibility, owner=None):
             else MasterStatus.DRAFT
         ),
     )
-    _create_tree(reference, snapshot)
+    _create_tree(
+        reference,
+        snapshot,
+        preserve_stable_ids=preserve_stable_ids,
+    )
     return reference
+
+
+@transaction.atomic
+def freeze_reference_for_inspection(source):
+    """
+    Create an internal reference snapshot for one inspection.
+    Stable IDs are preserved while database rows are independent.
+    """
+    snapshot = serialize_reference(source)
+    return create_reference_from_snapshot(
+        snapshot=snapshot,
+        name=source.name,
+        visibility=ReferenceVisibility.SNAPSHOT,
+        owner=None,
+        preserve_stable_ids=True,
+    )
 
 
 @transaction.atomic

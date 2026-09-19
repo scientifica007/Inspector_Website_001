@@ -12,7 +12,7 @@
       <a class="visit visit-link" href="{% url 'inspection_detail' inspection.pk %}">
         <div>
           <strong>{{ inspection.institution.name }}</strong>
-          <small>{{ inspection.visit_date }} · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</small>
+          <small>{{ inspection.visit_date }} · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}{% if inspection.status == "DRAFT" %} · مسودة مستقلة{% endif %}</small>
         </div>
         <span class="badge">{{ inspection.get_status_display }}</span>
       </a>
