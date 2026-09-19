@@ -97,6 +97,7 @@ def build_inspection_export(inspection):
             ),
             "title": node.title_snapshot,
             "description": node.description_snapshot,
+            "inspectable": node.inspectable_snapshot,
             "scope": _scope_payload(node, include_role=True),
             "specifications": specifications,
             "checklist_items": items,

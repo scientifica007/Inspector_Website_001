@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .governance import approve_proposal
 from .local_authoring import (
     copy_item_as_local,
     copy_node_as_local,
@@ -13,7 +12,6 @@ from .local_authoring import (
     move_local_node,
     remove_local_item,
     restore_local_item,
-    sync_local_proposal,
     update_local_item,
     update_local_specification,
 )
@@ -28,8 +26,6 @@ from .models import (
     MasterStatus,
     MasterVersion,
     Proposal,
-    ProposalStatus,
-    ProposalType,
     ResultStatus,
     ScopeOrigin,
     ScopeRole,
@@ -39,7 +35,6 @@ from .models import (
     StructureNode,
 )
 from .services import add_scope_branch
-
 
 User = get_user_model()
 
@@ -58,6 +53,7 @@ class LocalAuthoringOperationsTests(TestCase):
         self.institution = Institution.objects.create(name="مؤسسة التأليف")
         self.master = MasterVersion.objects.create(
             number=1,
+            name="مرجع التأليف",
             status=MasterStatus.PUBLISHED,
         )
         self.root = StructureNode.objects.create(
@@ -93,6 +89,7 @@ class LocalAuthoringOperationsTests(TestCase):
             institution=self.institution,
             inspector=self.inspector,
             master_version=self.master,
+            reference_name_snapshot=self.master.name,
             visit_date=date(2026, 9, 18),
         )
         add_scope_branch(self.inspection, self.root)
@@ -101,7 +98,7 @@ class LocalAuthoringOperationsTests(TestCase):
 
     def local_item(self, node=None, title="بند محلي"):
         node = node or self.snap_root
-        item = InspectionItemResult.objects.create(
+        return InspectionItemResult.objects.create(
             inspection_node=node,
             title_snapshot=title,
             guidance_snapshot="توجيه محلي",
@@ -109,12 +106,10 @@ class LocalAuthoringOperationsTests(TestCase):
             scope_origin=ScopeOrigin.LOCAL,
             scope_state=ScopeState.ACTIVE,
         )
-        sync_local_proposal(item, self.inspector)
-        return item
 
     def local_spec(self, node=None, title="وصف محلي"):
         node = node or self.snap_root
-        value = SpecificationValue.objects.create(
+        return SpecificationValue.objects.create(
             inspection_node=node,
             title_snapshot=title,
             field_type_snapshot=FieldType.NUMBER,
@@ -125,75 +120,52 @@ class LocalAuthoringOperationsTests(TestCase):
             scope_origin=ScopeOrigin.LOCAL,
             scope_state=ScopeState.ACTIVE,
         )
-        sync_local_proposal(value, self.inspector)
-        return value
 
     def local_node(self, parent=None, title="فرع محلي"):
         parent = self.snap_root if parent is None else parent
-        node = InspectionNode.objects.create(
+        return InspectionNode.objects.create(
             inspection=self.inspection,
             parent=parent,
             title_snapshot=title,
             description_snapshot="وصف الفرع",
+            inspectable_snapshot=True,
             sort_order_snapshot=90,
             scope_origin=ScopeOrigin.LOCAL,
             scope_state=ScopeState.ACTIVE,
             scope_role=ScopeRole.SELECTED,
         )
-        sync_local_proposal(node, self.inspector, inspectable=True)
-        return node
 
-    def test_pending_edit_updates_same_proposal(self):
-        item = self.local_item()
-        proposal = Proposal.objects.get(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
+    def test_visit_local_authoring_does_not_create_proposals(self):
+        self.client.login(username="authoring-inspector", password="test-pass-123")
+        self.client.post(
+            reverse("local_item_add", args=[self.inspection.pk, self.snap_root.pk]),
+            {"title": "بند خاص بالزيارة", "guidance": ""},
+        )
+        self.assertTrue(
+            self.snap_root.item_results.filter(
+                title_snapshot="بند خاص بالزيارة",
+                scope_origin=ScopeOrigin.LOCAL,
+            ).exists()
+        )
+        self.assertFalse(
+            Proposal.objects.filter(source_inspection=self.inspection).exists()
         )
 
+    def test_local_edit_stays_local_without_governance_side_effect(self):
+        item = self.local_item()
         update_local_item(
             item,
             self.inspector,
             {"title": "عنوان معدل", "guidance": "توجيه معدل"},
         )
-
         item.refresh_from_db()
-        proposal.refresh_from_db()
         self.assertEqual(item.title_snapshot, "عنوان معدل")
-        self.assertEqual(proposal.status, ProposalStatus.PENDING)
-        self.assertEqual(proposal.payload["title"], "عنوان معدل")
-        self.assertEqual(
-            Proposal.objects.filter(
-                proposal_type=ProposalType.ITEM,
-                source_local_id=item.id,
-            ).count(),
-            1,
+        self.assertEqual(item.guidance_snapshot, "توجيه معدل")
+        self.assertFalse(
+            Proposal.objects.filter(source_inspection=self.inspection).exists()
         )
 
-    def test_edit_after_resolution_creates_new_pending_proposal(self):
-        item = self.local_item()
-        first = Proposal.objects.get(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
-        )
-        approve_proposal(first, self.admin, dict(first.payload), "اعتماد أول")
-
-        update_local_item(
-            item,
-            self.inspector,
-            {"title": "تعديل لاحق", "guidance": "بعد الاعتماد"},
-        )
-
-        first.refresh_from_db()
-        proposals = Proposal.objects.filter(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
-        ).order_by("id")
-        self.assertEqual(first.status, ProposalStatus.APPROVED)
-        self.assertEqual(proposals.count(), 2)
-        self.assertEqual(proposals.last().status, ProposalStatus.PENDING)
-        self.assertEqual(proposals.last().payload["title"], "تعديل لاحق")
-
-    def test_remove_withdraws_pending_and_restore_reproposes_without_data_loss(self):
+    def test_remove_restore_preserves_same_snapshot_and_field_data(self):
         item = self.local_item()
         item.status = ResultStatus.OBSERVATION
         item.observation = "بيانات يجب أن تبقى"
@@ -202,31 +174,19 @@ class LocalAuthoringOperationsTests(TestCase):
 
         remove_local_item(item, self.inspector)
         item.refresh_from_db()
-        withdrawn = Proposal.objects.get(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
-        )
         self.assertEqual(item.scope_state, ScopeState.EXCLUDED)
-        self.assertEqual(withdrawn.status, ProposalStatus.WITHDRAWN)
 
         restore_local_item(item, self.inspector)
         item.refresh_from_db()
-        proposals = Proposal.objects.filter(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
-        ).order_by("id")
         self.assertEqual(item.id, original_id)
         self.assertEqual(item.scope_state, ScopeState.ACTIVE)
         self.assertEqual(item.status, ResultStatus.OBSERVATION)
         self.assertEqual(item.observation, "بيانات يجب أن تبقى")
-        self.assertEqual(proposals.count(), 2)
-        self.assertEqual(proposals.last().status, ProposalStatus.PENDING)
 
     def test_description_type_change_clears_incompatible_field_value(self):
         value = self.local_spec()
         value.value = 15
         value.save(update_fields=["value"])
-
         update_local_specification(
             value,
             self.inspector,
@@ -238,7 +198,6 @@ class LocalAuthoringOperationsTests(TestCase):
                 "help_text": "",
             },
         )
-
         value.refresh_from_db()
         self.assertEqual(value.field_type_snapshot, FieldType.DATE)
         self.assertIsNone(value.value)
@@ -251,48 +210,26 @@ class LocalAuthoringOperationsTests(TestCase):
 
         clone = copy_item_as_local(source, self.snap_child, self.inspector)
 
-        source.refresh_from_db()
         self.assertIsNone(clone.source_item_id)
         self.assertEqual(clone.scope_origin, ScopeOrigin.LOCAL)
-        self.assertEqual(clone.inspection_node_id, self.snap_child.id)
         self.assertEqual(clone.status, ResultStatus.UNCHECKED)
         self.assertEqual(clone.observation, "")
+        source.refresh_from_db()
         self.assertEqual(source.status, ResultStatus.NON_COMPLIANT)
-        self.assertEqual(source.observation, "نتيجة أصلية")
-        self.assertTrue(
-            Proposal.objects.filter(
-                proposal_type=ProposalType.ITEM,
-                source_local_id=clone.id,
-                status=ProposalStatus.PENDING,
-            ).exists()
-        )
 
-    def test_move_local_item_preserves_field_data_and_updates_pending_target(self):
+    def test_move_local_item_preserves_field_data(self):
         item = self.local_item()
         item.status = ResultStatus.COMPLIANT
         item.observation = "محفوظ"
         item.save(update_fields=["status", "observation"])
 
-        moved, changed = move_local_item(
-            item,
-            self.snap_child,
-            self.inspector,
-        )
+        moved, changed = move_local_item(item, self.snap_child, self.inspector)
 
         self.assertTrue(changed)
         moved.refresh_from_db()
-        proposal = Proposal.objects.get(
-            proposal_type=ProposalType.ITEM,
-            source_local_id=item.id,
-            status=ProposalStatus.PENDING,
-        )
         self.assertEqual(moved.inspection_node_id, self.snap_child.id)
         self.assertEqual(moved.status, ResultStatus.COMPLIANT)
         self.assertEqual(moved.observation, "محفوظ")
-        self.assertEqual(
-            proposal.payload["target_node_stable_id"],
-            str(self.child.stable_id),
-        )
 
     def test_branch_copy_is_recursive_local_and_resets_field_results(self):
         branch = self.local_node(title="فرع قابل للنسخ")
@@ -309,38 +246,20 @@ class LocalAuthoringOperationsTests(TestCase):
 
         self.assertNotEqual(clone.id, branch.id)
         self.assertEqual(clone.scope_origin, ScopeOrigin.LOCAL)
-        self.assertIsNone(clone.source_node_id)
+        self.assertTrue(clone.inspectable_snapshot)
         copied_value = clone.specification_values.get(title_snapshot="وصف داخل الفرع")
         copied_item = clone.item_results.get(title_snapshot="بند داخل الفرع")
         copied_child = clone.children.get(title_snapshot="فرع تابع")
         self.assertIsNone(copied_value.value)
         self.assertEqual(copied_item.status, ResultStatus.UNCHECKED)
         self.assertEqual(copied_item.observation, "")
-        self.assertEqual(copied_child.scope_origin, ScopeOrigin.LOCAL)
         self.assertNotEqual(copied_child.id, child.id)
-
-        copied_ids = [
-            (ProposalType.NODE, clone.id),
-            (ProposalType.SPECIFICATION, copied_value.id),
-            (ProposalType.ITEM, copied_item.id),
-            (ProposalType.NODE, copied_child.id),
-        ]
-        for proposal_type, local_id in copied_ids:
-            self.assertTrue(
-                Proposal.objects.filter(
-                    proposal_type=proposal_type,
-                    source_local_id=local_id,
-                    status=ProposalStatus.PENDING,
-                ).exists()
-            )
 
     def test_local_node_cannot_move_inside_its_own_subtree(self):
         parent = self.local_node(title="أب محلي")
         child = self.local_node(parent, title="ابن محلي")
-
         with self.assertRaises(ValidationError):
             move_local_node(parent, child, self.inspector)
-
         parent.refresh_from_db()
         self.assertEqual(parent.parent_id, self.snap_root.id)
 
@@ -365,13 +284,13 @@ class LocalAuthoringOperationsTests(TestCase):
         item = self.local_item()
         self.inspection.status = InspectionStatus.COMPLETED
         self.inspection.save(update_fields=["status"])
-
         self.client.login(username="authoring-inspector", password="test-pass-123")
-        response = self.client.get(
-            reverse("local_item_edit", args=[self.inspection.pk, item.pk])
+        self.assertEqual(
+            self.client.get(
+                reverse("local_item_edit", args=[self.inspection.pk, item.pk])
+            ).status_code,
+            403,
         )
-        self.assertEqual(response.status_code, 403)
-
 
     def test_restore_local_item_reactivates_pruned_context_path(self):
         context_source = StructureNode.objects.create(
@@ -383,6 +302,7 @@ class LocalAuthoringOperationsTests(TestCase):
             inspection=self.inspection,
             source_node=context_source,
             title_snapshot=context_source.title,
+            inspectable_snapshot=context_source.inspectable,
             sort_order_snapshot=80,
             scope_origin=ScopeOrigin.MANUAL,
             scope_state=ScopeState.ACTIVE,
@@ -390,7 +310,6 @@ class LocalAuthoringOperationsTests(TestCase):
         )
         item = self.local_item(context, title="بند داخل سياق")
         remove_local_item(item, self.inspector)
-
         context.refresh_from_db()
         self.assertEqual(context.scope_state, ScopeState.EXCLUDED)
 

@@ -1,14 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Max
-from django.utils import timezone
-
 from .models import (
     InspectionItemResult,
     InspectionNode,
-    Proposal,
-    ProposalStatus,
-    ProposalType,
     ResultStatus,
     ScopeOrigin,
     ScopeRole,
@@ -22,151 +17,19 @@ from .services import (
 )
 
 
-def _inspection_for(obj):
-    if isinstance(obj, InspectionNode):
-        return obj.inspection
-    return obj.inspection_node.inspection
-
-
-def _proposal_type_for(obj):
-    if isinstance(obj, InspectionNode):
-        return ProposalType.NODE
-    if isinstance(obj, SpecificationValue):
-        return ProposalType.SPECIFICATION
-    if isinstance(obj, InspectionItemResult):
-        return ProposalType.ITEM
-    raise TypeError("Unsupported local authoring object.")
-
-
-def _target_payload(node):
-    if node is None:
-        return {"target_root": True}
-    if node.source_node_id:
-        return {"target_node_stable_id": str(node.source_node.stable_id)}
-    return {"target_local_node_id": node.id}
-
-
-def _next_order(queryset, field_name):
-    current = queryset.aggregate(value=Max(field_name))["value"]
-    return (current or 0) + 10
-
-
-def _latest_proposal(obj):
-    return (
-        Proposal.objects.filter(
-            source_inspection=_inspection_for(obj),
-            proposal_type=_proposal_type_for(obj),
-            source_local_id=obj.id,
-        )
-        .order_by("-id")
-        .first()
-    )
-
-
 def node_inspectable(node):
-    if node.source_node_id:
-        return node.source_node.inspectable
-    latest = _latest_proposal(node)
-    if latest:
-        return bool((latest.payload or {}).get("inspectable", True))
-    return True
+    return bool(node.inspectable_snapshot)
 
 
-def proposal_payload(obj, *, inspectable=None):
-    if isinstance(obj, InspectionNode):
-        return {
-            **_target_payload(obj.parent),
-            "title": obj.title_snapshot,
-            "description": obj.description_snapshot,
-            "inspectable": node_inspectable(obj) if inspectable is None else bool(inspectable),
-            "sort_order": obj.sort_order_snapshot,
-        }
-    if isinstance(obj, SpecificationValue):
-        return {
-            **_target_payload(obj.inspection_node),
-            "title": obj.title_snapshot,
-            "field_type": obj.field_type_snapshot,
-            "required": obj.required_snapshot,
-            "options": list(obj.options_snapshot or []),
-            "help_text": obj.help_text_snapshot,
-            "sort_order": obj.sort_order_snapshot,
-        }
-    if isinstance(obj, InspectionItemResult):
-        return {
-            **_target_payload(obj.inspection_node),
-            "title": obj.title_snapshot,
-            "guidance": obj.guidance_snapshot,
-            "sort_order": obj.sort_order_snapshot,
-        }
-    raise TypeError("Unsupported local authoring object.")
-
-
-@transaction.atomic
 def sync_local_proposal(obj, user, *, inspectable=None):
-    if obj.scope_origin != ScopeOrigin.LOCAL:
-        raise ValidationError("لا يمكن إنشاء اقتراح تعديل لمحتوى غير محلي.")
+    """
+    Compatibility no-op for A-C3.
 
-    payload = proposal_payload(obj, inspectable=inspectable)
-    pending = (
-        Proposal.objects.select_for_update()
-        .filter(
-            source_inspection=_inspection_for(obj),
-            proposal_type=_proposal_type_for(obj),
-            source_local_id=obj.id,
-            status=ProposalStatus.PENDING,
-        )
-        .order_by("-id")
-        .first()
-    )
-    if pending:
-        pending.payload = payload
-        pending.save(update_fields=["payload"])
-        return pending, False
-
-    return (
-        Proposal.objects.create(
-            proposal_type=_proposal_type_for(obj),
-            source_inspection=_inspection_for(obj),
-            source_local_id=obj.id,
-            proposed_by=user,
-            payload=payload,
-        ),
-        True,
-    )
-
-
-def _withdraw_one(obj, user, note):
-    pending = list(
-        Proposal.objects.select_for_update().filter(
-            source_inspection=_inspection_for(obj),
-            proposal_type=_proposal_type_for(obj),
-            source_local_id=obj.id,
-            status=ProposalStatus.PENDING,
-        )
-    )
-    now = timezone.now()
-    for proposal in pending:
-        proposal.status = ProposalStatus.WITHDRAWN
-        proposal.resolution_note = note
-        proposal.resolution_data = {"reason": "source_removed_from_visit"}
-        proposal.resolved_by = user
-        proposal.resolved_at = now
-        proposal.save(
-            update_fields=[
-                "status",
-                "resolution_note",
-                "resolution_data",
-                "resolved_by",
-                "resolved_at",
-            ]
-        )
-    return len(pending)
-
-
-def _repropose_if_latest_withdrawn(obj, user):
-    latest = _latest_proposal(obj)
-    if latest and latest.status == ProposalStatus.WITHDRAWN:
-        sync_local_proposal(obj, user)
+    Visit-local authoring is private to the visit and is no longer submitted
+    automatically to Admin. Generalization now happens only by explicitly
+    submitting a private reference.
+    """
+    return None, False
 
 
 def _node_subtree(node):
@@ -217,8 +80,8 @@ def update_local_node(node, user, cleaned):
     _assert_active(node)
     node.title_snapshot = cleaned["title"].strip()
     node.description_snapshot = cleaned["description"].strip()
-    node.save(update_fields=["title_snapshot", "description_snapshot"])
-    sync_local_proposal(node, user, inspectable=cleaned["inspectable"])
+    node.inspectable_snapshot = bool(cleaned["inspectable"])
+    node.save(update_fields=["title_snapshot", "description_snapshot", "inspectable_snapshot"])
     return node
 
 
@@ -246,7 +109,6 @@ def update_local_specification(value, user, cleaned):
         value.value = None
         update_fields.append("value")
     value.save(update_fields=update_fields)
-    sync_local_proposal(value, user)
     return value
 
 
@@ -257,7 +119,6 @@ def update_local_item(item, user, cleaned):
     item.title_snapshot = cleaned["title"].strip()
     item.guidance_snapshot = cleaned["guidance"].strip()
     item.save(update_fields=["title_snapshot", "guidance_snapshot"])
-    sync_local_proposal(item, user)
     return item
 
 
@@ -279,7 +140,6 @@ def _copy_specification(source, target, user):
         scope_locked=False,
         completion_required=False,
     )
-    sync_local_proposal(clone, user)
     return clone
 
 
@@ -297,7 +157,6 @@ def _copy_item(source, target, user):
         scope_locked=False,
         completion_required=False,
     )
-    sync_local_proposal(clone, user)
     return clone
 
 
@@ -314,6 +173,7 @@ def _copy_node_recursive(source, target_parent, user):
         parent=target_parent,
         title_snapshot=source.title_snapshot,
         description_snapshot=source.description_snapshot,
+        inspectable_snapshot=node_inspectable(source),
         sort_order_snapshot=_next_order(order_query, "sort_order_snapshot"),
         scope_origin=ScopeOrigin.LOCAL,
         scope_state=ScopeState.ACTIVE,
@@ -322,7 +182,6 @@ def _copy_node_recursive(source, target_parent, user):
         additional_observations="",
         recommendations="",
     )
-    sync_local_proposal(clone, user, inspectable=node_inspectable(source))
 
     for spec in source.specification_values.filter(
         scope_state=ScopeState.ACTIVE
@@ -397,7 +256,6 @@ def move_local_node(node, target_parent, user):
     node.parent = target_parent
     node.sort_order_snapshot = _next_order(order_query, "sort_order_snapshot")
     node.save(update_fields=["parent", "sort_order_snapshot"])
-    sync_local_proposal(node, user)
     return node, True
 
 
@@ -416,7 +274,6 @@ def move_local_specification(value, target, user):
         target.specification_values.all(), "sort_order_snapshot"
     )
     value.save(update_fields=["inspection_node", "sort_order_snapshot"])
-    sync_local_proposal(value, user)
     return value, True
 
 
@@ -433,44 +290,23 @@ def move_local_item(item, target, user):
     item.inspection_node = target
     item.sort_order_snapshot = _next_order(target.item_results.all(), "sort_order_snapshot")
     item.save(update_fields=["inspection_node", "sort_order_snapshot"])
-    sync_local_proposal(item, user)
     return item, True
 
 
 @transaction.atomic
 def remove_local_node(node, user):
     _assert_local(node)
-    subtree = _node_subtree(node)
-    changed = exclude_scope_node(node)
-    if not changed:
-        return False
-    for candidate in subtree:
-        if candidate.scope_origin == ScopeOrigin.LOCAL:
-            _withdraw_one(candidate, user, "سحب الاقتراح بعد إخراج المحتوى من الزيارة.")
-        for value in candidate.specification_values.filter(scope_origin=ScopeOrigin.LOCAL):
-            _withdraw_one(value, user, "سحب الاقتراح بعد إخراج المحتوى من الزيارة.")
-        for item in candidate.item_results.filter(scope_origin=ScopeOrigin.LOCAL):
-            _withdraw_one(item, user, "سحب الاقتراح بعد إخراج المحتوى من الزيارة.")
-    return True
-
+    return exclude_scope_node(node)
 
 @transaction.atomic
 def remove_local_specification(value, user):
     _assert_local(value)
-    changed = exclude_scope_specification(value)
-    if changed:
-        _withdraw_one(value, user, "سحب الاقتراح بعد إخراج المحتوى من الزيارة.")
-    return changed
-
+    return exclude_scope_specification(value)
 
 @transaction.atomic
 def remove_local_item(item, user):
     _assert_local(item)
-    changed = exclude_scope_item(item)
-    if changed:
-        _withdraw_one(item, user, "سحب الاقتراح بعد إخراج المحتوى من الزيارة.")
-    return changed
-
+    return exclude_scope_item(item)
 
 @transaction.atomic
 def restore_local_node(node, user):
@@ -490,13 +326,6 @@ def restore_local_node(node, user):
             item.scope_state = ScopeState.ACTIVE
             item.save(update_fields=["scope_state"])
 
-    for candidate in subtree:
-        if candidate.scope_origin == ScopeOrigin.LOCAL:
-            _repropose_if_latest_withdrawn(candidate, user)
-        for value in candidate.specification_values.filter(scope_origin=ScopeOrigin.LOCAL):
-            _repropose_if_latest_withdrawn(value, user)
-        for item in candidate.item_results.filter(scope_origin=ScopeOrigin.LOCAL):
-            _repropose_if_latest_withdrawn(item, user)
     return node
 
 
@@ -508,7 +337,6 @@ def restore_local_specification(value, user):
         raise ValidationError("استعد الفرع الحاوي أولًا.")
     value.scope_state = ScopeState.ACTIVE
     value.save(update_fields=["scope_state"])
-    _repropose_if_latest_withdrawn(value, user)
     return value
 
 
@@ -520,5 +348,4 @@ def restore_local_item(item, user):
         raise ValidationError("استعد الفرع الحاوي أولًا.")
     item.scope_state = ScopeState.ACTIVE
     item.save(update_fields=["scope_state"])
-    _repropose_if_latest_withdrawn(item, user)
     return item

@@ -22,7 +22,7 @@ def proposal_list(request):
         status = ProposalStatus.PENDING
     proposals = (
         Proposal.objects.select_related("proposed_by", "source_inspection__institution")
-        .filter(status=status)
+        .filter(status=status, proposal_type=ProposalType.INSTITUTION)
         .order_by("-created_at", "-id")
     )
     return render(
@@ -44,6 +44,7 @@ def proposal_detail(request, pk):
             "resolved_by",
         ),
         pk=pk,
+        proposal_type=ProposalType.INSTITUTION,
     )
     form = ProposalModerationForm(request.POST or None, proposal=proposal)
 
@@ -86,7 +87,7 @@ def proposal_detail(request, pk):
                     )
                     messages.success(
                         request,
-                        "تم اعتماد الاقتراح في المسودة الحالية."
+                        "تم اعتماد اقتراح المؤسسة."
                         if changed
                         else "سبق حسم هذا الاقتراح.",
                     )

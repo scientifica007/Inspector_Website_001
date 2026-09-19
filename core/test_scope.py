@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .governance import approve_proposal
 from .models import (
     ChecklistItem,
     FieldType,
@@ -16,9 +15,6 @@ from .models import (
     Institution,
     MasterStatus,
     MasterVersion,
-    Proposal,
-    ProposalStatus,
-    ProposalType,
     ResultStatus,
     ScopeOrigin,
     ScopeRole,
@@ -232,13 +228,8 @@ class SelectiveScopeCoreTests(TestCase):
         )
         local = child_snapshot.item_results.get(title_snapshot="بند محلي داخل السياق")
         self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
-        self.assertEqual(
-            Proposal.objects.filter(
-                source_inspection=self.inspection,
-                proposal_type=ProposalType.ITEM,
-                source_local_id=local.id,
-            ).count(),
-            1,
+        self.assertFalse(
+            self.inspection.proposals.filter(source_local_id=local.id).exists()
         )
 
     def test_locked_item_cannot_be_excluded(self):
@@ -340,7 +331,7 @@ class SelectiveScopeCoreTests(TestCase):
         with self.assertRaises(ValidationError):
             add_scope_item(self.inspection, foreign_item)
 
-    def test_local_root_is_immediate_and_approves_to_draft_root(self):
+    def test_local_root_is_immediate_and_stays_private_to_visit(self):
         self.client.login(username="scope-inspector", password="test-pass-123")
         response = self.client.post(
             reverse("local_root_node_add", args=[self.inspection.pk]),
@@ -359,26 +350,7 @@ class SelectiveScopeCoreTests(TestCase):
         )
         self.assertIsNone(local.parent_id)
         self.assertEqual(local.scope_origin, ScopeOrigin.LOCAL)
-        proposal = Proposal.objects.get(
-            proposal_type=ProposalType.NODE,
-            source_inspection=self.inspection,
-            source_local_id=local.id,
+        self.assertTrue(local.inspectable_snapshot)
+        self.assertFalse(
+            self.inspection.proposals.filter(source_local_id=local.id).exists()
         )
-        self.assertEqual(proposal.status, ProposalStatus.PENDING)
-        self.assertTrue(proposal.payload["target_root"])
-
-        approved, changed = approve_proposal(
-            proposal,
-            self.admin,
-            dict(proposal.payload),
-            "اعتماد الجذر المحلي",
-        )
-        self.assertTrue(changed)
-        approved.refresh_from_db()
-        self.assertEqual(approved.status, ProposalStatus.APPROVED)
-        draft = MasterVersion.objects.get(status=MasterStatus.DRAFT)
-        created = StructureNode.objects.get(
-            master_version=draft,
-            title="عنصر ميداني رئيسي",
-        )
-        self.assertIsNone(created.parent_id)

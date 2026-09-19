@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}مقترحات المراجع{% endblock %}
+{% block content %}
+<section class="page-head"><div><p class="eyebrow">Admin</p><h1>مقترحات تعميم المراجع</h1><p class="hint">المعروض Snapshot المرسلة، وليس المرجع الخاص الحي للمفتش.</p></div></section>
+<nav class="proposal-filters" aria-label="تصفية المقترحات">
+{% for value,label in status_choices %}<a class="{% if selected_status == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}
+</nav>
+<section class="card">
+{% for submission in submissions %}
+  <a class="proposal-row" href="{% url 'reference_submission_detail' submission.pk %}">
+    <div><strong>{{ submission.source_name_snapshot }}</strong><small>{{ submission.submitted_by.username }} · {{ submission.created_at }}</small></div>
+    <span class="badge">{{ submission.get_status_display }}</span>
+  </a>
+{% empty %}<p>لا توجد مقترحات بهذه الحالة.</p>{% endfor %}
+</section>
+{% endblock %}

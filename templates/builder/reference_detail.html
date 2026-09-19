@@ -3,15 +3,21 @@
 {% block content %}
 <section class="page-head">
   <div>
-    <p class="eyebrow">مرجع تفتيش · {{ reference.get_visibility_display }}</p>
+    <p class="eyebrow">{% if is_admin_user %}Admin · {% else %}مرجع خاص · {% endif %}{{ reference.get_visibility_display }}</p>
     <h1>{{ reference.name }}</h1>
-    <p class="hint">مرجع مستقل؛ لا يحل محل أي مرجع آخر.</p>
+    <p class="hint">{% if can_submit %}هذا المرجع خاص بك. لن يصل إلى الإدارة إلا إذا ضغطت «اقتراح للتعميم».{% else %}مرجع مستقل؛ لا يحل محل أي مرجع آخر.{% endif %}</p>
   </div>
   <div class="actions">
-    <a class="secondary button-link" href="{% url 'builder_home' %}">كل المراجع</a>
+    <a class="secondary button-link" href="{% if is_admin_user %}{% url 'builder_home' %}{% else %}{% url 'reference_list' %}{% endif %}">كل المراجع</a>
     <a class="secondary button-link" href="{% url 'builder_reference_preview' reference.pk %}">معاينة</a>
     <a class="secondary button-link" href="{% url 'builder_reference_edit' reference.pk %}">تعديل الاسم</a>
     <a class="primary button-link" href="{% url 'builder_node_create' reference.pk %}">+ عنصر رئيسي</a>
+    {% if can_submit %}
+    <form method="post" action="{% url 'submit_reference' reference.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">اقتراح للتعميم</button>
+    </form>
+    {% endif %}
   </div>
 </section>
 

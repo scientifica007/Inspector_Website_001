@@ -30,6 +30,13 @@ class ReferenceVisibility(models.TextChoices):
     SHARED = "SHARED", "مشترك"
     PRIVATE = "PRIVATE", "خاص"
 
+class ReferenceSubmissionStatus(models.TextChoices):
+    PENDING = "PENDING", "قيد المراجعة"
+    APPROVED = "APPROVED", "معتمد"
+    REJECTED = "REJECTED", "مرفوض"
+    WITHDRAWN = "WITHDRAWN", "مسحوب"
+
+
 class ProposalStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
     APPROVED = "APPROVED", "معتمد"
@@ -206,6 +213,7 @@ class InspectionNode(models.Model):
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="children")
     title_snapshot = models.CharField(max_length=255)
     description_snapshot = models.TextField(blank=True)
+    inspectable_snapshot = models.BooleanField(default=True)
     sort_order_snapshot = models.PositiveIntegerField(default=0)
     scope_origin = models.CharField(
         max_length=16,
@@ -323,3 +331,45 @@ class Proposal(models.Model):
     )
     resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ReferenceSubmission(models.Model):
+    source_reference = models.ForeignKey(
+        MasterVersion,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="submissions",
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="reference_submissions",
+    )
+    source_name_snapshot = models.CharField(max_length=255)
+    snapshot = models.JSONField(default=dict)
+    status = models.CharField(
+        max_length=16,
+        choices=ReferenceSubmissionStatus.choices,
+        default=ReferenceSubmissionStatus.PENDING,
+    )
+    resolution_note = models.TextField(blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reference_submissions_resolved",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resulting_reference = models.ForeignKey(
+        MasterVersion,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="originating_submissions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]

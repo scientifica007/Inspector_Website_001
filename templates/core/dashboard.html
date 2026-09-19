@@ -33,9 +33,13 @@
     <strong>إدارة المراجع</strong>
     <span>إنشاء مراجع مستقلة وتعديلها أو حذفها.</span>
   </a>
+  <a class="card workspace-card" href="{% url 'reference_submission_list' %}">
+    <strong>مقترحات المراجع</strong>
+    <span>مراجعة المراجع الخاصة التي طلب أصحابها تعميمها.</span>
+  </a>
   <a class="card workspace-card" href="{% url 'proposal_list' %}">
-    <strong>الاقتراحات</strong>
-    <span>مراجعة الإضافات الميدانية المقترحة.</span>
+    <strong>اقتراحات المؤسسات</strong>
+    <span>مراجعة المؤسسات المضافة من الميدان.</span>
   </a>
   {% endif %}
 </section>

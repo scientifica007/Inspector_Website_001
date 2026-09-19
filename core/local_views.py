@@ -27,7 +27,6 @@ from .local_authoring import (
     restore_local_item,
     restore_local_node,
     restore_local_specification,
-    sync_local_proposal,
     update_local_item,
     update_local_node,
     update_local_specification,
@@ -193,20 +192,16 @@ def local_root_node_add(request, inspection_pk):
                 parent=None,
                 title_snapshot=form.cleaned_data["title"].strip(),
                 description_snapshot=form.cleaned_data["description"].strip(),
+                inspectable_snapshot=form.cleaned_data["inspectable"],
                 sort_order_snapshot=order,
                 scope_origin=ScopeOrigin.LOCAL,
                 scope_state=ScopeState.ACTIVE,
                 scope_role=ScopeRole.SELECTED,
             )
-            sync_local_proposal(
-                local,
-                request.user,
-                inspectable=form.cleaned_data["inspectable"],
-            )
             _mark_selective(inspection)
         messages.success(
             request,
-            "أضيف العنصر المحلي الرئيسي إلى الزيارة وأرسل كاقتراح للإدارة.",
+            "أضيف العنصر المحلي الرئيسي إلى الزيارة وحُفظ داخل الزيارة فقط.",
         )
         return redirect(
             "inspection_node_prepare",
@@ -221,7 +216,7 @@ def local_root_node_add(request, inspection_pk):
         form=form,
         title="إضافة عنصر محلي رئيسي",
         button_label="إضافة إلى الزيارة",
-        hint="يظهر العنصر فورًا في التحضير ويُرسل كاقتراح قبل تعميمه.",
+        hint="يظهر العنصر فورًا في التحضير ويبقى خاصًا بهذه الزيارة.",
     )
 
 
@@ -238,18 +233,14 @@ def local_node_add(request, inspection_pk, node_pk):
                 parent=parent,
                 title_snapshot=form.cleaned_data["title"].strip(),
                 description_snapshot=form.cleaned_data["description"].strip(),
+                inspectable_snapshot=form.cleaned_data["inspectable"],
                 sort_order_snapshot=order,
                 scope_origin=ScopeOrigin.LOCAL,
                 scope_state=ScopeState.ACTIVE,
                 scope_role=ScopeRole.SELECTED,
             )
-            sync_local_proposal(
-                local,
-                request.user,
-                inspectable=form.cleaned_data["inspectable"],
-            )
             _mark_selective(inspection)
-        messages.success(request, "أضيف الفرع إلى هذه الزيارة وأرسل كاقتراح للإدارة.")
+        messages.success(request, "أضيف الفرع إلى هذه الزيارة وحُفظ داخل الزيارة فقط.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,
@@ -263,7 +254,7 @@ def local_node_add(request, inspection_pk, node_pk):
         form=form,
         title="إضافة فرع محلي",
         button_label="إضافة إلى الزيارة",
-        hint="يظهر الفرع فورًا في التحضير ويُرسل كاقتراح قبل تعميمه.",
+        hint="يظهر الفرع فورًا في التحضير ويبقى خاصًا بهذه الزيارة.",
     )
 
 
@@ -289,9 +280,8 @@ def local_specification_add(request, inspection_pk, node_pk):
                 scope_origin=ScopeOrigin.LOCAL,
                 scope_state=ScopeState.ACTIVE,
             )
-            sync_local_proposal(spec, request.user)
             _mark_selective(inspection)
-        messages.success(request, "أضيف الوصف إلى الزيارة وأرسل كاقتراح للإدارة.")
+        messages.success(request, "أضيف الوصف إلى الزيارة وحُفظ داخل الزيارة فقط.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,
@@ -325,9 +315,8 @@ def local_item_add(request, inspection_pk, node_pk):
                 scope_origin=ScopeOrigin.LOCAL,
                 scope_state=ScopeState.ACTIVE,
             )
-            sync_local_proposal(item, request.user)
             _mark_selective(inspection)
-        messages.success(request, "أضيف بند التفتيش إلى الزيارة وأرسل كاقتراح للإدارة.")
+        messages.success(request, "أضيف بند التفتيش إلى الزيارة وحُفظ داخل الزيارة فقط.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,
@@ -359,7 +348,7 @@ def local_node_edit(request, inspection_pk, node_pk):
     )
     if request.method == "POST" and form.is_valid():
         update_local_node(node, request.user, form.cleaned_data)
-        messages.success(request, "تم تعديل الفرع المحلي وتحديث اقتراحه.")
+        messages.success(request, "تم تعديل الفرع المحلي وحُفظ التعديل داخل الزيارة.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,
@@ -372,7 +361,7 @@ def local_node_edit(request, inspection_pk, node_pk):
         form=form,
         title="تعديل الفرع المحلي",
         button_label="حفظ التعديل",
-        hint="إذا كان الاقتراح ما يزال قيد المراجعة يُحدّث نفسه؛ وإذا سبق حسمه يُنشأ اقتراح جديد.",
+        hint="هذا تعديل محلي داخل الزيارة ولا يُرسل تلقائيًا إلى الإدارة.",
     )
 
 
@@ -392,7 +381,7 @@ def local_specification_edit(request, inspection_pk, spec_pk):
     )
     if request.method == "POST" and form.is_valid():
         update_local_specification(spec, request.user, form.cleaned_data)
-        messages.success(request, "تم تعديل الوصف المحلي وتحديث اقتراحه.")
+        messages.success(request, "تم تعديل الوصف المحلي وحُفظ التعديل داخل الزيارة.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,
@@ -422,7 +411,7 @@ def local_item_edit(request, inspection_pk, item_pk):
     )
     if request.method == "POST" and form.is_valid():
         update_local_item(item, request.user, form.cleaned_data)
-        messages.success(request, "تم تعديل البند المحلي وتحديث اقتراحه.")
+        messages.success(request, "تم تعديل البند المحلي وحُفظ التعديل داخل الزيارة.")
         return redirect(
             "inspection_node_prepare",
             inspection_pk=inspection.pk,

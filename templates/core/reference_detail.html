@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ reference.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">مرجع تفتيش · {{ reference.get_visibility_display }}</p>
+    <h1>{{ reference.name }}</h1>
+    {% if reference.visibility == "PRIVATE" %}<p class="hint">خاص بصاحبه ولا يظهر للآخرين ما لم يُعتمد للتعميم.</p>{% else %}<p class="hint">مرجع مشترك متاح للمفتشين.</p>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'reference_list' %}">المراجع</a>
+    {% if is_owner %}
+      <a class="primary button-link" href="{% url 'builder_reference' reference.pk %}">تحرير المرجع</a>
+      <form method="post" action="{% url 'submit_reference' reference.pk %}">
+        {% csrf_token %}
+        <button class="secondary" type="submit">اقتراح للتعميم</button>
+      </form>
+    {% elif not is_admin_user %}
+      <a class="primary button-link" href="{% url 'clone_reference_private' reference.pk %}">نسخ إلى مراجعي</a>
+    {% endif %}
+  </div>
+</section>
+
+<div class="preview-list">
+{% for node, depth in tree %}
+  <section class="card preview-node" style="--depth:{{ depth }}">
+    <h2>{{ node.title }}</h2>
+    {% if node.description %}<p class="hint">{{ node.description }}</p>{% endif %}
+    {% if node.specifications.all %}
+      <div class="preview-section"><h3>الأوصاف</h3>
+      {% for spec in node.specifications.all %}{% if spec.active %}
+        <div class="preview-field"><strong>{{ spec.title }}</strong><span>{{ spec.get_field_type_display }}{% if spec.required %} · إلزامي{% endif %}</span></div>
+      {% endif %}{% endfor %}</div>
+    {% endif %}
+    {% if node.items.all %}
+      <div class="preview-section"><h3>بنود التفتيش</h3>
+      {% for item in node.items.all %}{% if item.active %}<div class="preview-item"><strong>{{ item.title }}</strong>{% if item.guidance %}<small class="hint">{{ item.guidance }}</small>{% endif %}</div>{% endif %}{% endfor %}</div>
+    {% endif %}
+  </section>
+{% empty %}
+  <section class="card empty-state"><p>هذا المرجع فارغ.</p></section>
+{% endfor %}
+</div>
+{% endblock %}

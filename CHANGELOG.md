@@ -32,6 +32,17 @@
 - Added migration `0006_reference_library_core` with legacy classification and visit-name snapshot backfill.
 - Legacy `number/status/published_at` fields remain temporarily as non-authoritative migration metadata and no longer drive builder or visit creation behavior.
 
+### A-C3.2 — Private References & Explicit Generalization
+- Inspectors can create and edit private references that are visible only to their owner.
+- Any visible reference can be cloned into an independent private reference.
+- Visit-local authoring no longer creates Proposal records automatically.
+- A private reference is submitted to Admin only through an explicit “اقتراح للتعميم” action.
+- Submission stores a frozen JSON snapshot, so later private edits or deletion do not change the Admin review payload.
+- Rejection leaves the private reference unchanged; approval creates a new independent SHARED reference.
+- Added `ReferenceSubmission`, explicit PENDING/APPROVED/REJECTED/WITHDRAWN states, and migration `0007_private_reference_submission`.
+- Added `InspectionNode.inspectable_snapshot` so visit-local semantics no longer depend on legacy Proposal payloads.
+- Legacy NODE/DESCRIPTION/ITEM Proposal records remain stored for history but are hidden from the active Admin inbox and cannot be approved through the A-C3 flow.
+
 ### Changed
 - New visits start with an empty selective scope and may choose an available reference explicitly.
 - The Master is treated as a reference library rather than a mandatory full-visit template.

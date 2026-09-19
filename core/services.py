@@ -25,7 +25,10 @@ from .models import (
 def visible_references(user):
     references = MasterVersion.objects.all()
     if user.is_superuser or getattr(getattr(user, "profile", None), "role", None) == Role.ADMIN:
-        return references
+        return references.filter(
+            models.Q(visibility=ReferenceVisibility.SHARED)
+            | models.Q(owner__isnull=True)
+        )
     return references.filter(
         models.Q(visibility=ReferenceVisibility.SHARED)
         | models.Q(visibility=ReferenceVisibility.PRIVATE, owner=user)
@@ -204,6 +207,7 @@ def materialize_inspection(inspection):
                 parent=inspection_parent,
                 title_snapshot=source.title,
                 description_snapshot=source.description,
+                inspectable_snapshot=source.inspectable,
                 sort_order_snapshot=source.sort_order,
                 scope_origin=origin,
                 scope_state=ScopeState.ACTIVE,
@@ -294,6 +298,7 @@ def _activate_snapshot_node(
                 parent=parent_snapshot,
                 title_snapshot=source.title,
                 description_snapshot=source.description,
+                inspectable_snapshot=source.inspectable,
                 sort_order_snapshot=source.sort_order,
                 scope_origin=origin,
                 scope_state=ScopeState.ACTIVE,

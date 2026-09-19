@@ -53,11 +53,13 @@
 
 ## nodes
 
-قائمة Recursive. كل Node يتضمن Snapshot ID، Stable ID للمصدر إن بقي موجودًا، العنوان والوصف وScope metadata والأوصاف والبنود والمعاينات والتوصيات والأبناء.
+قائمة Recursive. كل Node يتضمن Snapshot ID، Stable ID للمصدر إن بقي موجودًا، العنوان والوصف، `inspectable` التاريخية، وScope metadata والأوصاف والبنود والمعاينات والتوصيات والأبناء.
 
-## Local content وProposal trace
+## Local content وGovernance trace
 
-`scope.origin = "LOCAL"` يحدد المحتوى المحلي. في البيانات التاريخية التي لها Proposal قد يظهر أثر Proposal المرتبط بها. A-C3.2 يعيد تصميم التعميم ليصبح اختياريًا على مستوى المرجع الخاص بدل الإرسال التلقائي لكل عنصر.
+`scope.origin = "LOCAL"` يحدد المحتوى المحلي. الإضافات الجديدة داخل الزيارة لا تولد Proposal تلقائيًا.
+
+في الزيارات التاريخية التي سبق أن ارتبط محتواها المحلي بـProposal قد يبقى أثر Proposal في التصدير حفاظًا على التاريخ. أما التعميم في A-C3.2 فيتم عبر `ReferenceSubmission` مستقلة على مستوى المرجع الخاص، ولا تدخل ReferenceSubmission في Export الزيارة.
 
 ## الحذف
 

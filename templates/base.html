@@ -30,7 +30,8 @@
         <a href="{% url 'institution_list' %}">المؤسسات</a>
         {% if admin_access %}
           <a href="{% url 'builder_home' %}">إدارة المراجع</a>
-          <a href="{% url 'proposal_list' %}">الاقتراحات</a>
+          <a href="{% url 'reference_submission_list' %}">مقترحات المراجع</a>
+          <a href="{% url 'proposal_list' %}">اقتراحات المؤسسات</a>
         {% endif %}
       </nav>
     {% endif %}

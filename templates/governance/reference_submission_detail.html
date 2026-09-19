@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}مقترح مرجع #{{ submission.pk }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">مقترح مرجع #{{ submission.pk }}</p><h1>{{ submission.source_name_snapshot }}</h1><p class="hint">المرسل: {{ submission.submitted_by.username }} · الحالة: {{ submission.get_status_display }}</p></div>
+  <a class="secondary button-link" href="{% url 'reference_submission_list' %}">العودة</a>
+</section>
+
+<div class="preview-list">
+{% for row in snapshot_rows %}
+<section class="card preview-node" style="--depth:{{ row.depth }}">
+  <h2>{{ row.node.title }}</h2>
+  {% if row.node.description %}<p class="hint">{{ row.node.description }}</p>{% endif %}
+  {% if row.descriptions %}<div class="preview-section"><h3>الأوصاف</h3>{% for spec in row.descriptions %}<div class="preview-field"><strong>{{ spec.title }}</strong><span>{{ spec.field_type }}</span></div>{% endfor %}</div>{% endif %}
+  {% if row.items %}<div class="preview-section"><h3>البنود</h3>{% for item in row.items %}<div class="preview-item"><strong>{{ item.title }}</strong>{% if item.guidance %}<small class="hint">{{ item.guidance }}</small>{% endif %}</div>{% endfor %}</div>{% endif %}
+</section>
+{% empty %}<section class="card"><p>المرجع المرسل فارغ.</p></section>{% endfor %}
+</div>
+
+{% if submission.status == "PENDING" %}
+<section class="card narrow-form">
+<form method="post" class="stack-form">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for field in form %}<label>{{ field.label }} {{ field }} {{ field.errors }}</label>{% endfor %}
+  <div class="governance-actions">
+    <button class="primary" name="action" value="approve" type="submit">اعتماد كمرجع مشترك</button>
+    <button class="danger-outline" name="action" value="reject" type="submit">رفض التعميم</button>
+  </div>
+</form>
+</section>
+{% else %}
+<section class="card">
+  <p><strong>القرار:</strong> {{ submission.get_status_display }}</p>
+  {% if submission.resolution_note %}<p><strong>ملاحظة:</strong> {{ submission.resolution_note }}</p>{% endif %}
+  {% if submission.resulting_reference %}<p>المرجع المشترك الناتج: <a href="{% url 'builder_reference' submission.resulting_reference.pk %}">{{ submission.resulting_reference.name }}</a></p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -24,12 +24,12 @@
 - التوصيات؛
 - الإضافات المحلية.
 
-### C. Field Proposals
-ما اقترحه المفتش من الميدان ليُنظر في تعميمه مستقبلًا:
-- مؤسسة؛
-- Node؛
-- Specification؛
-- Checklist Item.
+### C. Governance Submissions
+يوجد مساران منفصلان:
+- Proposal للمؤسسات المضافة ميدانيًا؛
+- ReferenceSubmission لطلب تعميم مرجع PRIVATE كامل.
+
+اقتراحات NODE/SPECIFICATION/ITEM القديمة تبقى بيانات تاريخية فقط ولا تُنشأ في المسار الجديد.
 
 ## 2. Structure Node
 
@@ -155,11 +155,13 @@
 - Specification؛
 - Checklist Item.
 
-يستخدم فورًا في الزيارة ويولد Proposal. لا يصبح Master Content تلقائيًا.
+يستخدم فورًا في الزيارة ولا يولد Proposal تلقائيًا. لا يصبح مرجعًا مشتركًا تلقائيًا.
 
-## 13. Proposal
+## 13. Proposal وReferenceSubmission
 
-الـProposal كيان حوكمة منفصل عن Inspection Data وعن Master Content.
+الـProposal باقٍ أساسًا لحوكمة المؤسسات وللسجلات التاريخية القديمة.
+
+`ReferenceSubmission` هو مسار تعميم المراجع الخاصة ويحتوي Snapshot ثابتة لا تتغير مع المصدر الخاص.
 
 الحالات:
 - PENDING: قيد المراجعة.

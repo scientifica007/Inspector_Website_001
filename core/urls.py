@@ -1,10 +1,16 @@
 from django.urls import path
-from . import builder_views, export_views, governance_views, local_views, views
+from . import builder_views, export_views, governance_views, local_views, reference_views, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("health/", views.health, name="health"),
     path("references/", views.reference_list, name="reference_list"),
+    path("references/private/new/", reference_views.private_reference_create, name="private_reference_create"),
+    path("references/<int:pk>/", reference_views.reference_detail, name="reference_detail"),
+    path("references/<int:pk>/clone-private/", reference_views.clone_reference_private, name="clone_reference_private"),
+    path("references/<int:pk>/submit/", reference_views.submit_reference, name="submit_reference"),
+    path("reference-submissions/mine/", reference_views.my_reference_submissions, name="my_reference_submissions"),
+    path("reference-submissions/<int:pk>/withdraw/", reference_views.withdraw_reference_submission, name="withdraw_reference_submission"),
     path("institutions/", views.institution_list, name="institution_list"),
     path("institutions/new/", views.institution_create, name="institution_create"),
     path("inspections/", views.inspection_list, name="inspection_list"),
@@ -171,6 +177,8 @@ urlpatterns = [
     path("builder/items/<int:pk>/toggle/", builder_views.item_toggle, name="builder_item_toggle"),
     path("builder/items/<int:pk>/delete/", builder_views.item_delete, name="builder_item_delete"),
 
+    path("reference-submissions/", reference_views.reference_submission_list, name="reference_submission_list"),
+    path("reference-submissions/<int:pk>/", reference_views.reference_submission_detail, name="reference_submission_detail"),
     path("proposals/", governance_views.proposal_list, name="proposal_list"),
     path("proposals/<int:pk>/", governance_views.proposal_detail, name="proposal_detail"),
 ]
