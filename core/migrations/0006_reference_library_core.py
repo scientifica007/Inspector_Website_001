@@ -73,6 +73,19 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=255),
         ),
         migrations.AlterField(
+            model_name="masterversion",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("DRAFT", "مسودة قديمة"),
+                    ("PUBLISHED", "منشور قديم"),
+                    ("ARCHIVED", "مؤرشف قديم"),
+                ],
+                default="DRAFT",
+                max_length=16,
+            ),
+        ),
+        migrations.AlterField(
             model_name="inspection",
             name="master_version",
             field=models.ForeignKey(
