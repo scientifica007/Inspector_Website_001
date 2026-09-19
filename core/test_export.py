@@ -73,6 +73,7 @@ class ExportTests(TestCase):
             institution=self.institution,
             inspector=self.inspector,
             master_version=self.master,
+            source_reference=self.master,
             reference_name_snapshot=self.master.name,
             visit_date=date(2026, 9, 18),
             general_observations="معاينة عامة",
