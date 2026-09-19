@@ -32,6 +32,11 @@ def sync_local_proposal(obj, user, *, inspectable=None):
     return None, False
 
 
+def _next_order(queryset, field_name):
+    current = queryset.aggregate(value=Max(field_name))["value"]
+    return (current or 0) + 10
+
+
 def _node_subtree(node):
     found = []
     frontier = [node]
