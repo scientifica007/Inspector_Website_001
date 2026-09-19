@@ -1,103 +1,79 @@
-# ARCHITECTURE — v0.1
+# ARCHITECTURE — current contract
 
 ## 1. الهدف المعماري
 
-بناء Web App صغيرة الآن، دون إغلاق الطريق أمام التطور لاحقًا.
+Web App صغيرة قابلة للتوسع، مع فصل واضح بين مكتبة المراجع، مسودة/سجل الزيارة، الحوكمة، والتصدير.
 
 ## 2. المكونات
 
 ### Web Client
 - واجهة عربية RTL.
 - Mobile-first.
-- Inspector UI.
-- Admin Builder UI.
-- Autosave.
+- Inspector workspace.
+- Admin reference builder.
 - JSON export.
 
-### Application / API Layer
-- Authentication.
-- Authorization.
-- CRUD.
-- Versioning.
-- Proposal moderation.
+### Application Layer
+- Authentication / Authorization.
+- Reference library CRUD.
+- Selective visit scope.
+- Visit-local authoring.
+- ReferenceSubmission governance.
+- Institution Proposal governance.
 - Validation.
 - Audit metadata.
 
 ### Central Database
-يفضل نموذج علائقي يدعم:
-- العلاقات Recursive؛
-- History؛
-- Transactions؛
-- صلاحيات؛
-- JSON عند الحاجة للقيم الديناميكية.
+نموذج علائقي يدعم العلاقات Recursive، Transactions، الصلاحيات، Snapshots، وJSON للقيم الديناميكية.
+التطبيق الحالي يستخدم Django ORM مع SQLite في Pilot المحلي وقابلية PostgreSQL عند النشر.
 
-PostgreSQL هو الاتجاه المرجح، لكن اختيار المزود النهائي يؤجل إلى Technical Spike.
+## 3. مكتبة المراجع المستقلة
 
-## 3. قرار التقنية المؤجل
+لا يوجد Master حي واحد ولا مسار Published Version → Draft → Publish كعقد حاكم.
+المراجع مستقلة: SHARED / PRIVATE / SNAPSHOT داخلية خاصة بالزيارات.
+SNAPSHOT ليست عنصرًا في مكتبة المستخدم؛ هي Implementation detail لحماية استقلال الزيارة عن تغييرات المصدر.
 
-لا يُقفل الآن الاختيار بين:
-- Backend مُدار مثل Supabase؛
-- تطبيق Web مع Backend مخصص؛
-- بديل مناسب يثبت في Spike.
+## 4. Frozen visit source
 
-معيار الاختيار:
-- بساطة النشر؛
-- Authentication؛
-- PostgreSQL؛
-- سياسات صلاحيات جيدة؛
-- تكلفة تشغيل منخفضة؛
-- سهولة النسخ الاحتياطي؛
-- عدم الارتهان غير الضروري؛
-- سهولة التطوير بواسطة Agents لاحقًا.
+عند إنشاء زيارة من Reference:
+1. يسجل المصدر في source_reference؛
+2. يحفظ reference_name_snapshot؛
+3. ينسخ المرجع إلى SNAPSHOT داخلية مستقلة مع Stable IDs نفسها؛
+4. يبني المفتش ACTIVE scope انتقائيًا من هذه اللقطة.
 
-## 4. Versioned Master
-
-لا يوجد "Master حي قابل للتعديل مباشرة".
-
-المسار:
-`Published Version → Edit as Draft → Preview → Publish New Version`
-
-الزيارات الجارية لا تنتقل تلقائيًا لإصدار جديد.
+لذلك تعديل/حذف المصدر لا يغير الزيارة.
 
 ## 5. Rendering ديناميكي
 
-الواجهة لا تُبرمج شاشة لكل مجال.
+Renderer يقرأ Nodes، Description definitions، Checklist items، ordering، وscope metadata.
+ولا توجد شاشة برمجية منفصلة لكل مجال.
 
-Renderer يقرأ:
-- Nodes؛
-- Specification definitions؛
-- Checklist items؛
-- ordering.
+## 6. Governance
 
-ثم يولد UI.
+يوجد مساران منفصلان:
+- Institution Proposal للمؤسسات المضافة من الميدان؛
+- ReferenceSubmission لتعميم Reference PRIVATE كاملة بناءً على Snapshot ثابتة.
 
-هذا هو أساس قابلية الهندسة بواسطة Admin.
+الإضافات LOCAL داخل زيارة لا تُرسل تلقائيًا إلى Admin.
 
-## 6. Security Baseline
+## 7. Security Baseline
 
-- Authentication إلزامي للموقع التشغيلي.
+- Authentication إلزامي.
 - Authorization Server-side.
 - Admin وInspector أدوار منفصلة.
-- Validation على الخادم، لا الاعتماد على الواجهة.
-- لا أسرار أو Tokens داخل GitHub.
-- لا بيانات تشغيلية شخصية حقيقية داخل المستودع.
-- سجل من أنشأ/عدل/اعتمد المحتوى المرجعي.
-- Export لا يحتوي أكثر مما تحتاجه المهمة.
+- PRIVATE references لا تظهر لغير مالكها.
+- SNAPSHOT الداخلية لا تظهر في مكتبة المراجع أو Builder.
+- Validation على الخادم.
+- لا أسرار/Tokens داخل GitHub.
+- Export لا يحتوي إلا ما تحتاجه الزيارة.
 
-## 7. تاريخ البيانات
+## 8. تاريخ البيانات
 
-تعديلات Admin المستقبلية لا تعيد تفسير بيانات قديمة.
-الـIDs المرجعية وحدها لا تكفي؛ نحتفظ Snapshots للعناوين والتعريفات ذات الصلة.
+الحقيقة التاريخية للزيارة تحفظ داخل Inspection snapshots.
+Stable IDs تساعد على الربط المنطقي، لكنها لا تستخدم لإعادة تفسير سجل قديم من مرجع حي متغير.
+COMPLETED سجل غير قابل للتعديل أو الحذف.
 
-## 8. التطور اللاحق الممكن
+## 9. التطور اللاحق
 
-دون تغيير النواة:
-- Attachments؛
-- PWA/Offline؛
-- AI report generation؛
-- dashboards؛
-- integrations؛
-- corrective actions؛
-- richer roles.
-
-هذه ليست ضمن V1.
+النواة تسمح لاحقًا بـ Guides، Assignments، Attachments، PWA/Offline، AI report generation، dashboards، integrations، corrective actions، وricher roles.
+هذه الإضافات لا يجوز أن تكسر استقلال الزيارة أو تعيد فرض Reference كاملة بلا سبب مهني.

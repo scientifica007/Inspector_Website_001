@@ -97,3 +97,24 @@
 - تحديث CHANGELOG وCURRENT-STATE؛
 - PR قابل للمراجعة؛
 - لا Merge إلى main دون قبول صريح.
+
+
+---
+
+## Post-Gate-6 correction extension — adopted 2026-09-18/19
+
+أظهر Human Pilot أن بعض افتراضات Gate 5/6 الأصلية لا تخدم جودة المنتج النهائي. لذلك أُعيد فتح النطاق بصورة مضبوطة تحت DC-SCOPE-02 بدل حماية التصميم القديم.
+
+التسلسل الحالي:
+
+- Stage A — Selective Scope Core + Correction Gate
+  - A-C1 Workspace separation
+  - A-C2 Local authoring operations
+  - A-C3 Independent reference library / private references / frozen visit draft
+- Stage B — Guides
+- Stage C — Required Assignments
+- Stage D — Human Acceptance / Release
+
+القرارات D-015 وما بعدها والوثيقة 18-SELECTIVE-SCOPE-DESIGN.md هي المرجع الأحدث عند التعارض مع وصف Gate 5 التاريخي أعلاه.
+
+Stop Rule الأصلي ما يزال صالحًا من حيث منع Feature creep غير المثبت، لكنه لا يمنع هذه التصحيحات التي أثبتها Pilot واعتمدها صاحب المشروع.
