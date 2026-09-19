@@ -25,11 +25,14 @@
     <a class="brand" href="{% url 'dashboard' %}">منصة التفتيش</a>
     {% if user.is_authenticated %}
       <nav class="main-nav" aria-label="التنقل الرئيسي">
-        <a href="{% url 'dashboard' %}">الزيارات</a>
+        <a href="{% url 'inspection_list' %}">الزيارات</a>
+        <a href="{% url 'reference_list' %}">المراجع</a>
         <a href="{% url 'institution_list' %}">المؤسسات</a>
         {% if admin_access %}
-          <a href="{% url 'builder_home' %}">هندسة المرجع</a>
-          <a href="{% url 'proposal_list' %}">الاقتراحات</a>
+          <a href="{% url 'builder_home' %}">إدارة المراجع</a>
+          <a href="{% url 'guide_list' %}">الأدلة</a>
+          <a href="{% url 'reference_submission_list' %}">مقترحات المراجع</a>
+          <a href="{% url 'proposal_list' %}">اقتراحات المؤسسات</a>
         {% endif %}
       </nav>
     {% endif %}

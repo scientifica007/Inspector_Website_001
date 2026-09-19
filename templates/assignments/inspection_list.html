@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}التكليفات الرسمية{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · {{ inspection.visit_date }}</p>
+    <h1>التكليفات الرسمية</h1>
+    <p class="hint">التكليف هو مصدر الإلزام الرسمي في نطاق الزيارة، وهو مستقل عن الأدلة الاختيارية.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+    {% if can_create %}
+      <a class="primary button-link" href="{% url 'assignment_create' inspection.pk %}">+ تكليف جديد</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card">
+  {% for assignment in assignments %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ assignment.title }}</strong>
+        <div class="prepare-node-meta">
+          <span class="badge">{{ assignment.get_status_display }}</span>
+          <span class="hint">{{ assignment.entries.count }} عنصر تكليف</span>
+          {% if assignment.issued_at %}<span class="hint">صدر: {{ assignment.issued_at }}</span>{% endif %}
+          {% if assignment.revoked_at %}<span class="hint">ألغي: {{ assignment.revoked_at }}</span>{% endif %}
+        </div>
+        {% if assignment.description %}<small class="hint">{{ assignment.description }}</small>{% endif %}
+      </div>
+      <a class="secondary button-link" href="{% url 'assignment_detail' assignment.pk %}">فتح التكليف</a>
+    </div>
+  {% empty %}
+    <p class="hint">لا توجد تكليفات رسمية لهذه الزيارة.</p>
+  {% endfor %}
+</section>
+{% endblock %}

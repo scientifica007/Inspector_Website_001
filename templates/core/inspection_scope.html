@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}إدارة نطاق الزيارة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</p>
+    <h1>إدارة نطاق الزيارة</h1>
+    <p class="hint">اختر فقط ما تحتاج إلى فحصه. المرجع مصدر عمل مستقل وليس طبعة تلغي ما قبلها.</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+</section>
+
+{% if not can_edit %}
+<section class="readonly-banner" role="status">هذه الزيارة للقراءة فقط؛ لا يمكن تعديل نطاقها.</section>
+{% endif %}
+
+{% if not inspection.master_version_id %}
+<section class="card empty-state">
+  <p>هذه الزيارة بدأت دون مرجع مصدر. استخدم الإضافات المحلية في مساحة التحضير.</p>
+</section>
+{% else %}
+<section class="card scope-help">
+  <strong>كيف يعمل النطاق؟</strong>
+  <p class="hint">يمكن إضافة فرع كامل، أو وصف واحد، أو بند واحد. إخراج عنصر لا يحذف بياناته؛ ويمكن استعادته لاحقًا.</p>
+</section>
+
+<section class="scope-reference">
+  {% for row in rows %}
+  <article class="card scope-node" style="--depth:{{ row.depth }}">
+    <div class="scope-node-head">
+      <div>
+        <h2>{{ row.node.title }}</h2>
+        {% if row.node.description %}<p class="hint">{{ row.node.description }}</p>{% endif %}
+        <div class="scope-badges">
+          {% if row.snapshot %}
+            {% if row.snapshot.scope_state == "ACTIVE" %}
+              {% if row.snapshot.scope_role == "CONTEXT" %}<span class="badge scope-badge-context">سياق بنيوي</span>{% else %}<span class="badge">ضمن النطاق</span>{% endif %}
+            {% else %}<span class="badge scope-badge-excluded">مستبعد ومحفوظ</span>{% endif %}
+            {% if row.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if row.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+          {% else %}<span class="hint">غير مضاف</span>{% endif %}
+        </div>
+      </div>
+      {% if can_edit %}
+      <div class="scope-actions">
+        {% if row.snapshot and row.snapshot.scope_state == "ACTIVE" and row.snapshot.scope_role == "SELECTED" %}
+          {% if not row.snapshot.scope_locked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="exclude_node"><input type="hidden" name="snapshot_id" value="{{ row.snapshot.id }}"><button class="secondary" type="submit">إخراج الفرع</button></form>{% endif %}
+        {% elif row.snapshot and row.snapshot.scope_state == "EXCLUDED" and row.snapshot.scope_role == "SELECTED" %}
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="restore_node"><input type="hidden" name="snapshot_id" value="{{ row.snapshot.id }}"><button class="primary" type="submit">استعادة الفرع</button></form>
+        {% else %}
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_branch"><input type="hidden" name="source_node_id" value="{{ row.node.id }}"><button class="primary" type="submit">إضافة الفرع بالكامل</button></form>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if row.specifications %}
+    <div class="scope-group"><h3>الأوصاف</h3>
+      {% for entry in row.specifications %}
+      <div class="scope-entry">
+        <div><strong>{{ entry.definition.title }}</strong>{% if entry.definition.help_text %}<small class="hint">{{ entry.definition.help_text }}</small>{% endif %}
+          {% if entry.snapshot %}
+            <span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>
+            {% if entry.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if entry.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if entry.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          {% endif %}
+        </div>
+        {% if can_edit %}<div>
+          {% if entry.snapshot and entry.snapshot.scope_state == "ACTIVE" %}{% if not entry.snapshot.scope_locked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="exclude_spec"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">إخراج</button></form>{% endif %}
+          {% elif entry.snapshot %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="restore_spec"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">استعادة</button></form>
+          {% else %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_spec"><input type="hidden" name="source_spec_id" value="{{ entry.definition.id }}"><button class="text-action" type="submit">إضافة</button></form>{% endif %}
+        </div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if row.items %}
+    <div class="scope-group"><h3>بنود التفتيش</h3>
+      {% for entry in row.items %}
+      <div class="scope-entry">
+        <div><strong>{{ entry.definition.title }}</strong>{% if entry.definition.guidance %}<small class="hint">{{ entry.definition.guidance }}</small>{% endif %}
+          {% if entry.snapshot %}
+            <span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>
+            {% if entry.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if entry.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if entry.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          {% endif %}
+        </div>
+        {% if can_edit %}<div>
+          {% if entry.snapshot and entry.snapshot.scope_state == "ACTIVE" %}{% if not entry.snapshot.scope_locked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="exclude_item"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">إخراج</button></form>{% endif %}
+          {% elif entry.snapshot %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="restore_item"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">استعادة</button></form>
+          {% else %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_item"><input type="hidden" name="source_item_id" value="{{ entry.definition.id }}"><button class="text-action" type="submit">إضافة</button></form>{% endif %}
+        </div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </article>
+  {% empty %}
+  <section class="card empty-state"><p>لا توجد عناصر نشطة في هذا المرجع.</p></section>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

@@ -3,22 +3,24 @@
 {% block content %}
 <section class="page-head">
   <div>
-    <p class="eyebrow">زيارة ميدانية · المرجع v{{ inspection.master_version.number }}</p>
+    <p class="eyebrow">زيارة ميدانية · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</p>
     <h1>{{ inspection.institution.name }}</h1>
     <p class="hint">{{ inspection.visit_date }} · {{ inspection.get_status_display }}</p>
   </div>
   <div class="actions">
     <a class="secondary button-link" href="{% url 'inspection_export' inspection.pk %}">تحميل JSON</a>
     <a class="secondary button-link" href="{% url 'inspection_general' inspection.pk %}">المعاينات العامة</a>
+    <a class="secondary button-link" href="{% url 'inspection_assignments' inspection.pk %}">التكليفات الرسمية</a>
     {% if can_edit %}
       <a class="primary button-link" href="{% url 'inspection_complete' inspection.pk %}">إنهاء الزيارة</a>
+      <a class="danger-outline button-link" href="{% url 'inspection_delete' inspection.pk %}">حذف المسودة</a>
     {% endif %}
   </div>
 </section>
 
 <section class="card inspection-progress">
   <div class="progress-line">
-    <strong>التقدم</strong>
+    <strong>التقدم في النطاق الحالي</strong>
     <span>{{ resolved_items }} / {{ total_items }} بندًا محسومًا</span>
   </div>
   <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progress }}">
@@ -27,23 +29,23 @@
   <small>{{ progress }}%</small>
 </section>
 
-<section class="card inspection-tree-card">
-  <div class="section-title"><h2>مجالات الزيارة</h2></div>
-  {% if tree %}
-    <div class="tree-list">
-      {% for node, depth in tree %}
-        <a class="tree-row field-tree-row" style="--depth:{{ depth }}" href="{% url 'inspection_node' inspection.pk node.pk %}">
-          <span class="tree-branch" aria-hidden="true">↳</span>
-          <span>
-            <strong>{{ node.title_snapshot }}</strong>
-            {% if node.description_snapshot %}<small>{{ node.description_snapshot|truncatechars:90 }}</small>{% endif %}
-          </span>
-        </a>
-      {% endfor %}
+<section class="workflow-grid" aria-label="مراحل العمل على الزيارة">
+  <a class="card workflow-card" href="{% url 'inspection_prepare' inspection.pk %}">
+    <span class="workflow-step">1</span>
+    <div>
+      <strong>تحضير الزيارة</strong>
+      <p>حدد النطاق، أضف الفروع والأوصاف والبنود، وجهّز البطاقة قبل العمل الميداني.</p>
+      <small>{{ scope_node_count }} عنصرًا بنيويًا ضمن النطاق الحالي</small>
     </div>
-  {% else %}
-    <p>لا توجد عناصر في نسخة هذه الزيارة.</p>
-  {% endif %}
+  </a>
+  <a class="card workflow-card" href="{% url 'inspection_execute' inspection.pk %}">
+    <span class="workflow-step">2</span>
+    <div>
+      <strong>تنفيذ الزيارة</strong>
+      <p>أدخل القيم، احسم حالات البنود، وسجّل المعاينات والتوصيات.</p>
+      <small>{{ total_items }} بند تفتيش نشط</small>
+    </div>
+  </a>
 </section>
 
 {% if inspection.status == "COMPLETED" %}

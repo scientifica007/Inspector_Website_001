@@ -1,17 +1,18 @@
 from django import forms
 
-from .models import FieldType, Inspection, ResultStatus
+from .models import FieldType, Inspection, ResultStatus, ScopeState
 
 class InspectionNodeEntryForm(forms.Form):
-    def __init__(self, *args, node, readonly=False, **kwargs):
+    def __init__(self, *args, node, readonly=False, node_notes_enabled=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.node = node
         self.readonly = readonly
+        self.node_notes_enabled = node_notes_enabled
         self.spec_values = list(
-            node.specification_values.all().order_by("sort_order_snapshot", "id")
+            node.specification_values.filter(scope_state=ScopeState.ACTIVE).order_by("sort_order_snapshot", "id")
         )
         self.item_results = list(
-            node.item_results.all().order_by("sort_order_snapshot", "id")
+            node.item_results.filter(scope_state=ScopeState.ACTIVE).order_by("sort_order_snapshot", "id")
         )
 
         for spec in self.spec_values:
@@ -68,6 +69,7 @@ class InspectionNodeEntryForm(forms.Form):
                 choices=ResultStatus.choices,
                 initial=item.status,
                 disabled=readonly,
+                widget=forms.Select(attrs={"class": "status-select"}),
             )
             self.fields[f"observation_{item.id}"] = forms.CharField(
                 label="المعاينة / الملاحظة",
@@ -83,14 +85,14 @@ class InspectionNodeEntryForm(forms.Form):
             required=False,
             initial=node.additional_observations,
             widget=forms.Textarea(attrs={"rows": 4}),
-            disabled=readonly,
+            disabled=readonly or not node_notes_enabled,
         )
         self.fields["recommendations"] = forms.CharField(
             label="توصيات هذا المجال",
             required=False,
             initial=node.recommendations,
             widget=forms.Textarea(attrs={"rows": 4}),
-            disabled=readonly,
+            disabled=readonly or not node_notes_enabled,
         )
 
     @property
@@ -142,9 +144,10 @@ class InspectionNodeEntryForm(forms.Form):
             item.observation = self.cleaned_data[f"observation_{item.id}"]
             item.save(update_fields=["status", "observation"])
 
-        self.node.additional_observations = self.cleaned_data["additional_observations"]
-        self.node.recommendations = self.cleaned_data["recommendations"]
-        self.node.save(update_fields=["additional_observations", "recommendations"])
+        if self.node_notes_enabled:
+            self.node.additional_observations = self.cleaned_data["additional_observations"]
+            self.node.recommendations = self.cleaned_data["recommendations"]
+            self.node.save(update_fields=["additional_observations", "recommendations"])
 
 class InspectionGeneralForm(forms.ModelForm):
     class Meta:

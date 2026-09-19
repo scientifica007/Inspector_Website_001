@@ -1,210 +1,286 @@
-# DOMAIN MODEL — v0.1
+# DOMAIN MODEL — v0.2
 
-## 1. الطبقات الثلاث
+## 1. الطبقات الرئيسية
 
-### A. Master Content
-المحتوى المشترك الذي اعتمده Admin:
+### A. Reference Library
+مكتبة مراجع التفتيش المستقلة:
 - المؤسسات المعتمدة؛
 - Structure Nodes؛
 - Specification Definitions؛
 - Checklist Items.
+
+لا يوجد «Master حالي» يلغي ما قبله. كل مرجع كيان مستقل يمكن أن يكون SHARED أو PRIVATE.
 
 ### B. Inspection Data
 ما حدث فعليًا في زيارة معينة:
 - المؤسسة؛
 - المفتش؛
 - تاريخ الزيارة؛
-- إصدار المرجع المستخدم؛
+- اسم المرجع المصدر كما كان عند إنشاء الزيارة، إن وجد؛
+- نطاق الزيارة الفعلي؛
 - قيم المواصفات؛
 - نتائج البنود؛
 - المعاينات؛
 - التوصيات؛
-- الإضافات المحلية للزيارة.
+- الإضافات المحلية.
 
-### C. Field Proposals
-ما اقترحه المفتش من الميدان ليُنظر في تعميمه مستقبلًا:
-- مؤسسة؛
-- Node؛
-- Specification؛
-- Checklist Item.
+### C. Governance Submissions
+يوجد مساران منفصلان:
+- Proposal للمؤسسات المضافة ميدانيًا؛
+- ReferenceSubmission لطلب تعميم مرجع PRIVATE كامل.
 
-## 2. العنصر الهيكلي Structure Node
+اقتراحات NODE/SPECIFICATION/ITEM القديمة تبقى بيانات تاريخية فقط ولا تُنشأ في المسار الجديد.
 
-العنصر الأساسي للشجرة. لا توجد جداول منفصلة Domain/Subdomain/SubSubdomain.
+## 2. Structure Node
 
-حقول منطقية مقترحة:
-- id
-- parent_id nullable
-- title
-- description
-- inspectable boolean
-- sort_order
-- active
-- created_by
-- created_at
-- updated_at
+العنصر الأساسي للشجرة. العلاقة Recursive عبر `parent_id`.
 
-العلاقة Recursive:
-`parent_id -> structure_nodes.id`
+يمكن أن يمثل مجالًا أو تحت مجال أو مصلحة أو وحدة أو أي مستوى إضافي.
 
-وبذلك يمكن تمثيل:
-- مجال؛
-- تحت مجال؛
-- مديرية فرعية؛
-- مصلحة؛
-- وحدة؛
-- أي مستوى إضافي.
-
-## 3. المواصفة Specification Definition
+## 3. Specification Definition
 
 معلومة تصف Node وليست حكمًا تفتيشيًا.
 
-أمثلة:
-- اسم ولقب المدير الفرعي؛
-- عدد الموظفين؛
-- تاريخ التعيين؛
-- المصالح الموجودة؛
-- وصف تنظيمي.
+الأنواع:
+- SHORT_TEXT
+- LONG_TEXT
+- NUMBER
+- DATE
+- BOOLEAN
+- SINGLE_SELECT
+- MULTI_SELECT
 
-أنواع V1:
-- short_text
-- long_text
-- number
-- date
-- boolean
-- single_select
-- multi_select
+## 4. Checklist Item
 
-حقول مقترحة:
-- id
-- node_id
-- title
-- field_type
-- required
-- options_json nullable
-- help_text nullable
-- sort_order
-- active
-
-## 4. بند التفتيش Checklist Item
-
-شيء يصدر المفتش بشأنه حالة.
-
-حقول مقترحة:
-- id
-- node_id
-- title
-- guidance nullable
-- sort_order
-- active
-- created_by
-- created_at
-
-الحالات:
+شيء يصدر المفتش بشأنه حالة:
 - UNCHECKED
 - NOT_APPLICABLE
 - COMPLIANT
 - OBSERVATION
 - NON_COMPLIANT
 
-## 5. المؤسسة Institution
+## 5. Institution
 
-كيان مستقل عن الزيارة.
+كيان مستقل عن الزيارة. إذا أضافه مفتش أثناء العمل يُستخدم فورًا ويولد Proposal للمراجعة.
 
-حقول V1 المقترحة:
-- id
-- name
-- type nullable
-- commune nullable
-- active
-- verification_status
-- created_by
-- created_at
+## 6. Inspection Reference
 
-إذا أضافها مفتش أثناء العمل تُستعمل في زيارته فورًا وتولد Proposal للمراجعة.
+يمثل مرجع تفتيش مستقلًا داخل المكتبة.
 
-## 6. المرجع وإصداراته Master Version
+الحقول الدلالية:
+- `name`
+- `visibility`: SHARED | PRIVATE
+- `owner`: مالك المرجع الخاص، ويكون فارغًا للمرجع الإداري المشترك.
 
-الحالة المنطقية:
-- DRAFT
-- PUBLISHED
-- ARCHIVED
+الاسم الداخلي الحالي `MasterVersion` وحقول `number/status/published_at` باقية مؤقتًا لتقليل مخاطر Migration A-C3، لكنها **Legacy metadata غير حاكمة للسلوك**.
 
-كل Publish ينتج Version غير قابلة للتعديل بأثر رجعي.
+لا يؤدي إنشاء مرجع أو تعديله إلى أرشفة أو إلغاء أي مرجع آخر.
 
-الزيارة الجديدة تربط:
-`inspection.master_version_id`
+## 7. Inspection
 
-## 7. الزيارة Inspection
-
-حقول مقترحة:
-- id
+الحقول المنطقية الأساسية:
 - institution_id
 - inspector_id
-- master_version_id
+- source_reference_id: المرجع الأصلي إن كان ما يزال موجودًا؛ يمكن أن يصبح NULL عند حذف المصدر
+- master_version_id: اسم داخلي Legacy يشير في A-C3.3 إلى Reference SNAPSHOT المجمدة الخاصة بالزيارة
+- reference_name_snapshot: اسم المصدر كما كان عند إنشاء الزيارة
 - visit_date
 - status: DRAFT | COMPLETED
+- scope_mode: LEGACY_FULL | SELECTIVE
 - general_observations
 - general_recommendations
-- created_at
-- updated_at
+
+`SELECTIVE` هو الوضع الافتراضي للزيارات الجديدة. `LEGACY_FULL` يصف الزيارات التاريخية التي أُنشئت قبل الانتقال إلى النطاق الانتقائي.
 
 ## 8. Inspection Node
 
-يمثل Node كما استُعمل داخل الزيارة، ويحتفظ Snapshot مناسبًا لحماية التاريخ.
+يمثل Node كما استُعمل داخل الزيارة ويحتفظ Snapshot لحماية التاريخ.
 
-حقول منطقية:
-- id
-- inspection_id
-- source_node_id nullable
-- parent_inspection_node_id nullable
-- title_snapshot
-- description_snapshot
-- sort_order_snapshot
-- local_addition boolean
+إضافة إلى Snapshot، يحمل:
+- `scope_origin`: LEGACY | MANUAL | GUIDE | ASSIGNMENT | LOCAL
+- `scope_state`: ACTIVE | EXCLUDED
+- `scope_role`: SELECTED | CONTEXT
+- `scope_locked`: boolean
 - additional_observations
 - recommendations
 
+`CONTEXT` يعني أن العنصر موجود فقط لحفظ المسار البنيوي لعنصر أعمق، ولا يعني أن بقية محتوياته دخلت نطاق الزيارة.
+
 ## 9. Specification Value
 
-- inspection_node_id
-- source_specification_id nullable
-- title_snapshot
-- field_type_snapshot
-- value_json
-- local_addition boolean
+يحمل Snapshot للمواصفة وقيمتها، إضافة إلى:
+- `scope_origin`
+- `scope_state`
+- `scope_locked`
+- `completion_required`
+
+إخراج المواصفة من النطاق لا يحذف قيمتها.
 
 ## 10. Inspection Item Result
 
-- inspection_node_id
-- source_item_id nullable
-- title_snapshot
-- status
-- observation
-- local_addition boolean
-- sort_order_snapshot
+يحمل Snapshot للبند وحالته ومعاينته، إضافة إلى:
+- `scope_origin`
+- `scope_state`
+- `scope_locked`
+- `completion_required`
 
-## 11. Proposal
+إخراج البند من النطاق لا يحذف نتيجته أو معاينته.
 
-حقول منطقية:
-- id
-- type: INSTITUTION | NODE | SPECIFICATION | ITEM
-- source_inspection_id
-- source_local_id
-- proposed_by
-- payload_json
-- status: PENDING | APPROVED | REJECTED | MERGED
-- resolution_note
-- resolved_by
-- resolved_at
+## 11. Scope semantics
 
-الاعتماد لا يغير الزيارة الأصلية؛ يدخل المحتوى المعتمد في Draft المرجع التالي.
+الأصل هو حرية الاختيار:
+- يمكن إضافة فرع كامل؛
+- مواصفة منفردة؛
+- بند منفرد؛
+- أو محتوى محلي غير موجود في المرجع.
 
-## 12. Invariants
+عند اختيار عنصر عميق، تُنشأ الآباء اللازمة كسياق فقط.
 
-1. الزيارات القديمة لا تتغير عند تعديل Master.
-2. أي نص تاريخي مهم يحتفظ Snapshot.
-3. لا حذف فعلي لمحتوى مرجعي مستخدم تاريخيًا.
-4. عنصر محلي في الزيارة لا يصبح مشتركًا تلقائيًا.
-5. Proposal ليست Inspection Data وليست Master Content.
-6. Progress يحسب NOT_APPLICABLE كحالة محسومة، بينما Compliance analytics تستبعدها من المقام.
+`scope_locked` يعني أن العنصر لا يجوز إخراجه من النطاق.
+
+`completion_required` مفهوم مستقل: يعني أن الزيارة لا تكتمل قبل حسم العنصر.
+
+التوجيه والإلزام المستقبليان لا يغيران هذه النواة:
+- GUIDE يقدّم اقتراحًا قابلًا للتعديل؛
+- ASSIGNMENT قد يضيف عناصر مقيدة أو لازمة للإكمال.
+
+## 12. Local content
+
+المحتوى المحلي لا يستخدم Boolean مستقلًا. مصدره يُمثَّل بـ:
+
+`scope_origin = LOCAL`
+
+ويمكن أن يكون:
+- Root Node؛
+- Child Node؛
+- Specification؛
+- Checklist Item.
+
+يستخدم فورًا في الزيارة ولا يولد Proposal تلقائيًا. لا يصبح مرجعًا مشتركًا تلقائيًا.
+
+## 13. Proposal وReferenceSubmission
+
+الـProposal باقٍ أساسًا لحوكمة المؤسسات وللسجلات التاريخية القديمة.
+
+`ReferenceSubmission` هو مسار تعميم المراجع الخاصة ويحتوي Snapshot ثابتة لا تتغير مع المصدر الخاص.
+
+الحالات:
+- PENDING: قيد المراجعة.
+- APPROVED: معتمد.
+- REJECTED: مرفوض.
+- MERGED: مدمج.
+- WITHDRAWN: سحبه المفتش بعد إخراج المحتوى المحلي قبل حسمه إداريًا.
+
+اعتماد Proposal لا يعيد كتابة الزيارة الأصلية؛ يضيف المحتوى المعتمد إلى Draft المرجع التالي.
+
+قد توجد عدة Proposals تاريخية لنفس `source_local_id` عندما يُعدل المحتوى المحلي بعد حسم اقتراح سابق. القرار التاريخي لا يعاد فتحه أو استبداله.
+
+## 14. Invariants
+
+1. لا يوجد مرجع عالمي واحد حاكم؛ المراجع مستقلة.
+2. الزيارة قد تختار مرجع مصدر صراحة أو تبدأ دون مرجع.
+3. اختيار المرجع ينشئ لقطة داخلية مستقلة؛ لا تعتمد المسودة على المرجع الحي بعد الإنشاء.
+4. حذف أو تعديل مرجع المصدر لا يغير الزيارة ولا لقطة مصدرها المجمدة.
+5. DRAFT قابل للحذف من صاحبه؛ COMPLETED غير قابل للحذف أو التعديل.
+4. اختيار عنصر منفرد لا يسحب محتويات شقيقاته أو بقية الفرع.
+5. الآباء السياقية لا تُعامل تلقائيًا كعناصر مفحوصة.
+6. الإخراج من النطاق Soft Exclusion ولا يحذف البيانات.
+7. الاستعادة تعيد نفس Snapshot وقيمه السابقة.
+8. لا يتكرر Snapshot لنفس عنصر Master داخل الزيارة نفسها.
+9. Snapshot المرجعي لا يعدل مباشرة؛ التخصيص يتم عبر نسخة LOCAL مستقلة.
+10. نسخ المحتوى ينقل التصميم دون قيم أو نتائج ميدانية.
+11. نقل المحتوى LOCAL يحافظ على Snapshot نفسها وبياناتها.
+12. Soft Remove للمحتوى LOCAL يسحب Proposal المعلق ولا يمحو التاريخ.
+9. Progress يحسب ACTIVE checklist items فقط.
+10. NOT_APPLICABLE محسومة للـProgress وتستبعد من Compliance denominator.
+11. العنصر المحلي لا يصبح مشتركًا دون قرار Admin.
+12. Proposal ليست Inspection Data وليست Master Content.
+
+
+---
+
+## 14. Guide
+
+Guide كيان توصية اختياري مرتبط بـReference SHARED واحدة.
+
+الحقول الأساسية:
+- reference
+- name
+- description
+- created_by
+- created_at / updated_at
+
+## 15. GuideEntry
+
+كل GuideEntry يستهدف عنصرًا منطقيًا بواسطة:
+- entry_type: BRANCH | SPECIFICATION | ITEM
+- stable_id
+- label_snapshot
+- sort_order
+
+لا يوجد FK مباشر إلى Node/Description/Item حتى يبقى GuideEntry قابلًا للتفسير إذا حُذف تعريف بعينه من المرجع. عند التطبيق تُحل Stable ID داخل اللقطة المجمدة للزيارة.
+
+## 16. GuideApplication
+
+يمثل واقعة تطبيق Guide على Inspection:
+- inspection
+- guide إن كان ما يزال موجودًا
+- guide_name_snapshot
+- guide_snapshot
+- applied_by / applied_at
+- applied_count / skipped_count
+- result_details
+
+القيد الفريد Inspection + Guide يجعل التطبيق idempotent.
+
+GuideApplication سجل تطبيق، وليس مصدر الحقيقة لمحتوى الزيارة؛ محتوى الزيارة يبقى في Inspection Snapshots نفسها.
+
+
+---
+
+## 17. Assignment
+
+Assignment تكليف رسمي مرتبط بزيارة واحدة.
+
+الحالات:
+- DRAFT
+- ISSUED
+- REVOKED
+
+يحفظ:
+- inspection
+- title / description
+- created_by
+- issued_by / issued_at
+- revoked_by / revoked_at / revocation_reason
+
+## 18. AssignmentEntry
+
+يستهدف عنصرًا في Reference SNAPSHOT المجمدة للزيارة بواسطة:
+- entry_type: BRANCH | SPECIFICATION | ITEM
+- stable_id
+- label_snapshot
+- scope_locked
+- completion_required
+- sort_order
+
+يلزم أن يكون واحد على الأقل من `scope_locked` أو `completion_required` مفعّلًا.
+
+## 19. AssignmentEffect
+
+هو سجل Provenance للالتزام بعد إصدار Assignment.
+
+كل Effect يرتبط بواحد فقط من:
+- InspectionNode؛
+- SpecificationValue؛
+- InspectionItemResult.
+
+ويحفظ ما إذا كان ذلك AssignmentEntry يفرض:
+- scope_locked؛
+- completion_required.
+
+لا تعتمد عملية الإلغاء على قلب Boolean مباشرة. الحالة الفعالة تُعاد حسابها من:
+- base_scope_locked / base_completion_required؛
+- Effects التابعة لتكليفات ISSUED.
+
+بهذا لا يؤدي إلغاء تكليف إلى إزالة قيد تاريخي أو قيد من تكليف آخر.

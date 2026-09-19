@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}المراجع{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'dashboard' %}">الرئيسية</a></p>
+    <h1>مراجع التفتيش</h1>
+    <p class="hint">المراجع المشتركة ومراجعك الخاصة مستقلة وقابلة للنمو.</p>
+  </div>
+  <div class="actions">
+    {% if is_admin_user %}
+      <a class="primary button-link" href="{% url 'builder_home' %}">إدارة المراجع المشتركة</a>
+    {% else %}
+      <a class="primary button-link" href="{% url 'private_reference_create' %}">+ مرجع خاص</a>
+      <a class="secondary button-link" href="{% url 'my_reference_submissions' %}">اقتراحاتي للتعميم</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card">
+  {% if references %}
+    <div class="prepare-list">
+      {% for reference in references %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ reference.name }}</strong>
+          <div class="prepare-node-meta">
+            <span class="badge">{{ reference.get_visibility_display }}</span>
+            {% if reference.visibility == "PRIVATE" %}<span class="hint">مرجعك الخاص</span>{% else %}<span class="hint">متاح لجميع المفتشين</span>{% endif %}
+          </div>
+        </div>
+        <div class="row-actions">
+          <a href="{% url 'reference_detail' reference.pk %}">عرض</a>
+          {% if not is_admin_user %}
+            {% if reference.visibility == "PRIVATE" and reference.owner_id == user.id %}
+              <a href="{% url 'builder_reference' reference.pk %}">تحرير</a>
+            {% else %}
+              <a href="{% url 'clone_reference_private' reference.pk %}">نسخ إلى مراجعي</a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>لا توجد مراجع متاحة حاليًا.</p>
+  {% endif %}
+</section>
+{% endblock %}

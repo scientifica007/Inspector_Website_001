@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}تحضير الزيارة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</p>
+    <h1>تحضير الزيارة</h1>
+    <p class="hint">ابنِ بطاقة الزيارة هنا. لا يلزم إدخال القيم الميدانية أثناء التحضير.</p>
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">نظرة عامة</a>
+    {% if can_edit and inspection.master_version_id %}
+      <a class="primary button-link" href="{% url 'inspection_scope' inspection.pk %}">اختيار من المرجع</a>
+      {% if inspection.source_reference_id %}
+        <a class="secondary button-link" href="{% url 'inspection_guides' inspection.pk %}">الأدلة المقترحة</a>
+      {% endif %}
+    {% endif %}
+    <a class="secondary button-link" href="{% url 'inspection_assignments' inspection.pk %}">التكليفات الرسمية</a>
+    {% if can_edit %}
+      <a class="secondary button-link" href="{% url 'local_root_node_add' inspection.pk %}">+ عنصر محلي رئيسي</a>
+      <a class="secondary button-link" href="{% url 'local_removed_content' inspection.pk %}">المحتوى المستبعد</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if not can_edit %}
+<section class="readonly-banner" role="status">هذه الزيارة للقراءة فقط؛ يمكن مراجعة تحضيرها دون تعديل.</section>
+{% endif %}
+
+{% if can_edit and not inspection.master_version_id %}
+<section class="readonly-banner" role="status">بدأت هذه الزيارة دون مرجع مصدر. يمكنك بناء محتواها محليًا.</section>
+{% endif %}
+
+<section class="card inspection-tree-card">
+  <div class="section-title">
+    <h2>البنية المحضّرة</h2>
+    {% if can_edit and inspection.master_version_id %}<a href="{% url 'inspection_scope' inspection.pk %}">إدارة النطاق</a>{% endif %}
+  </div>
+  {% if tree %}
+    <div class="tree-list">
+      {% for node, depth in tree %}
+        <a class="tree-row field-tree-row {% if node.scope_role == 'CONTEXT' %}scope-context-row{% endif %}" style="--depth:{{ depth }}" href="{% url 'inspection_node_prepare' inspection.pk node.pk %}">
+          <span class="tree-branch" aria-hidden="true">↳</span>
+          <span>
+            <strong>
+              {{ node.title_snapshot }}
+              {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+              {% if node.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+              {% if node.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            </strong>
+            {% if node.scope_role == "CONTEXT" %}<small>سياق بنيوي</small>{% elif node.description_snapshot %}<small>{{ node.description_snapshot|truncatechars:90 }}</small>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>لم تُحضّر عناصر الزيارة بعد.</p>
+      {% if can_edit %}
+      <div class="actions">
+        {% if inspection.master_version_id %}<a class="primary button-link" href="{% url 'inspection_scope' inspection.pk %}">اختيار من المرجع</a>{% endif %}
+        <a class="secondary button-link" href="{% url 'local_root_node_add' inspection.pk %}">+ عنصر محلي رئيسي</a>
+      </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

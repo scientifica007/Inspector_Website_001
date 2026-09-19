@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ reference.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{% if is_admin_user %}Admin · {% else %}مرجع خاص · {% endif %}{{ reference.get_visibility_display }}</p>
+    <h1>{{ reference.name }}</h1>
+    <p class="hint">{% if can_submit %}هذا المرجع خاص بك. لن يصل إلى الإدارة إلا إذا ضغطت «اقتراح للتعميم».{% else %}مرجع مستقل؛ لا يحل محل أي مرجع آخر.{% endif %}</p>
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% if is_admin_user %}{% url 'builder_home' %}{% else %}{% url 'reference_list' %}{% endif %}">كل المراجع</a>
+    <a class="secondary button-link" href="{% url 'builder_reference_preview' reference.pk %}">معاينة</a>
+    <a class="secondary button-link" href="{% url 'builder_reference_edit' reference.pk %}">تعديل الاسم</a>
+    <a class="primary button-link" href="{% url 'builder_node_create' reference.pk %}">+ عنصر رئيسي</a>
+    {% if can_submit %}
+    <form method="post" action="{% url 'submit_reference' reference.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">اقتراح للتعميم</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card">
+  <div class="builder-summary">
+    <strong>شجرة المرجع</strong>
+    <span>{{ tree|length }} عنصر</span>
+  </div>
+  {% if tree %}
+    <div class="tree-list">
+      {% for node, depth in tree %}
+        <a class="tree-row {% if not node.active %}muted-row{% endif %}" style="--depth:{{ depth }}" href="{% url 'builder_node' node.pk %}">
+          <span class="tree-branch" aria-hidden="true">↳</span>
+          <span>
+            <strong>{{ node.title }}</strong>
+            <small>{% if node.inspectable %}قابل للتفتيش{% else %}حاوية تنظيمية{% endif %}{% if not node.active %} · معطل{% endif %}</small>
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>هذا المرجع فارغ.</p>
+      <a class="primary button-link" href="{% url 'builder_node_create' reference.pk %}">أضف أول عنصر</a>
+    </div>
+  {% endif %}
+</section>
+
+<section class="card danger-zone">
+  <h2>حذف المرجع</h2>
+  <p class="hint">يحذف المرجع ومحتواه من المكتبة. الزيارات التي سبق أن استعملته تحتفظ بـSnapshots الخاصة بها.</p>
+  <form method="post" action="{% url 'builder_reference_delete' reference.pk %}">
+    {% csrf_token %}
+    <button class="danger-outline" type="submit">حذف المرجع</button>
+  </form>
+</section>
+{% endblock %}

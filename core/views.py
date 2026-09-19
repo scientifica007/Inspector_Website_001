@@ -1,9 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import InspectionCreateForm, InstitutionForm
@@ -13,19 +13,39 @@ from .inspection_forms import (
     InspectionNodeEntryForm,
 )
 from .models import (
+    ChecklistItem,
     Inspection,
     InspectionItemResult,
+    InspectionNode,
     InspectionStatus,
     Institution,
     InstitutionVerificationStatus,
-    MasterStatus,
     MasterVersion,
     Proposal,
+    ReferenceVisibility,
     ProposalType,
     ResultStatus,
     Role,
+    ScopeRole,
+    ScopeState,
+    SpecificationDefinition,
+    SpecificationValue,
+    StructureNode,
 )
-from .services import flatten_inspection_nodes, materialize_inspection
+from .reference_library import freeze_reference_for_inspection
+from .services import (
+    active_item_results,
+    add_scope_branch,
+    add_scope_item,
+    add_scope_specification,
+    exclude_scope_item,
+    exclude_scope_node,
+    exclude_scope_specification,
+    flatten_inspection_nodes,
+    incomplete_required_scope_count,
+    scope_reference_rows,
+    visible_references,
+)
 
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -60,12 +80,74 @@ def can_edit_inspection(user, inspection):
         and inspection.status == InspectionStatus.DRAFT
     )
 
+def _visible_inspections(user):
+    inspections = Inspection.objects.select_related(
+        "institution", "master_version", "inspector"
+    )
+    if not is_admin(user):
+        inspections = inspections.filter(inspector=user)
+    return inspections
+
+
+def _inspection_progress(inspection):
+    item_query = active_item_results(inspection)
+    total = item_query.count()
+    resolved = item_query.exclude(status=ResultStatus.UNCHECKED).count()
+    progress = round((resolved / total) * 100) if total else 0
+    return total, resolved, progress
+
+
+def _node_navigation(node):
+    breadcrumbs = []
+    current = node
+    while current is not None:
+        breadcrumbs.append(current)
+        current = current.parent
+    breadcrumbs.reverse()
+    children = node.children.filter(
+        scope_state=ScopeState.ACTIVE
+    ).order_by("sort_order_snapshot", "id")
+    return breadcrumbs, children
+
+
 @login_required
 def dashboard(request):
-    inspections = Inspection.objects.select_related("institution", "master_version")
-    if not is_admin(request.user):
-        inspections = inspections.filter(inspector=request.user)
-    return render(request, "core/dashboard.html", {"inspections": inspections})
+    inspections = _visible_inspections(request.user)
+    return render(
+        request,
+        "core/dashboard.html",
+        {
+            "inspection_count": inspections.count(),
+            "institution_count": visible_institutions(request.user).count(),
+            "reference_count": visible_references(request.user).count(),
+            "is_admin_user": is_admin(request.user),
+        },
+    )
+
+
+@login_required
+def inspection_list(request):
+    return render(
+        request,
+        "core/inspection_list.html",
+        {
+            "inspections": _visible_inspections(request.user),
+            "is_admin_user": is_admin(request.user),
+        },
+    )
+
+
+@login_required
+def reference_list(request):
+    return render(
+        request,
+        "core/reference_list.html",
+        {
+            "references": visible_references(request.user).select_related("owner"),
+            "is_admin_user": is_admin(request.user),
+        },
+    )
+
 
 @login_required
 def institution_list(request):
@@ -112,53 +194,268 @@ def institution_create(request):
 
 @login_required
 def inspection_create(request):
-    master = MasterVersion.objects.filter(status=MasterStatus.PUBLISHED).order_by("-number").first()
     institutions = visible_institutions(request.user)
-    if master is None:
-        return render(
-            request,
-            "core/inspection_form.html",
-            {"form": None, "master_missing": True},
-            status=409 if request.method == "POST" else 200,
-        )
-
-    form = InspectionCreateForm(request.POST or None, institutions=institutions)
+    references = visible_references(request.user)
+    form = InspectionCreateForm(
+        request.POST or None,
+        institutions=institutions,
+        references=references,
+    )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             inspection = form.save(commit=False)
             inspection.inspector = request.user
-            inspection.master_version = master
+            reference = form.cleaned_data["reference"]
+            inspection.source_reference = reference
+            inspection.reference_name_snapshot = reference.name if reference else ""
+            inspection.master_version = (
+                freeze_reference_for_inspection(reference)
+                if reference
+                else None
+            )
             inspection.save()
-            materialize_inspection(inspection)
-        messages.success(request, "أنشئت مسودة الزيارة وحُفظت نسخة المرجع الخاصة بها.")
+        if reference:
+            messages.success(
+                request,
+                f"أنشئت مسودة الزيارة من «{reference.name}» مع لقطة مستقلة لا تتغير بتعديل المرجع الأصلي.",
+            )
+        else:
+            messages.success(
+                request,
+                "أنشئت مسودة زيارة فارغة دون مرجع مصدر.",
+            )
         return redirect("inspection_detail", pk=inspection.pk)
 
     return render(
         request,
         "core/inspection_form.html",
-        {"form": form, "master_missing": False, "master": master},
+        {"form": form},
     )
+
+@login_required
+def inspection_delete(request, pk):
+    inspection = inspection_for_user(request.user, pk)
+    if inspection.inspector_id != request.user.id:
+        raise PermissionDenied("حذف المسودة متاح للمفتش صاحبها فقط.")
+    if inspection.status != InspectionStatus.DRAFT:
+        return HttpResponse(
+            "الزيارة المكتملة سجل مهني محفوظ ولا يمكن حذفها.",
+            status=409,
+        )
+
+    frozen_reference = inspection.master_version
+    if request.method == "POST":
+        with transaction.atomic():
+            inspection_id = inspection.id
+            inspection.proposals.all().delete()
+            inspection.delete()
+            if (
+                frozen_reference
+                and frozen_reference.visibility == ReferenceVisibility.SNAPSHOT
+                and not frozen_reference.inspections.exists()
+            ):
+                frozen_reference.delete()
+        messages.success(request, f"تم حذف مسودة الزيارة #{inspection_id}.")
+        return redirect("inspection_list")
+
+    return render(
+        request,
+        "core/inspection_delete_confirm.html",
+        {"inspection": inspection},
+    )
+
 
 @login_required
 def inspection_detail(request, pk):
     inspection = inspection_for_user(request.user, pk)
-    tree = flatten_inspection_nodes(inspection)
-    item_query = InspectionItemResult.objects.filter(
-        inspection_node__inspection=inspection
-    )
-    total = item_query.count()
-    resolved = item_query.exclude(status=ResultStatus.UNCHECKED).count()
-    progress = round((resolved / total) * 100) if total else 0
+    tree = flatten_inspection_nodes(inspection, active_only=True)
+    total, resolved, progress = _inspection_progress(inspection)
     return render(
         request,
         "core/inspection_detail.html",
         {
             "inspection": inspection,
-            "tree": tree,
+            "scope_node_count": len(tree),
             "total_items": total,
             "resolved_items": resolved,
             "progress": progress,
             "can_edit": can_edit_inspection(request.user, inspection),
+        },
+    )
+
+
+@login_required
+def inspection_prepare(request, pk):
+    inspection = inspection_for_user(request.user, pk)
+    return render(
+        request,
+        "core/inspection_prepare.html",
+        {
+            "inspection": inspection,
+            "tree": flatten_inspection_nodes(inspection, active_only=True),
+            "can_edit": can_edit_inspection(request.user, inspection),
+        },
+    )
+
+
+@login_required
+def inspection_execute(request, pk):
+    inspection = inspection_for_user(request.user, pk)
+    total, resolved, progress = _inspection_progress(inspection)
+    return render(
+        request,
+        "core/inspection_execute.html",
+        {
+            "inspection": inspection,
+            "tree": flatten_inspection_nodes(inspection, active_only=True),
+            "total_items": total,
+            "resolved_items": resolved,
+            "progress": progress,
+            "can_edit": can_edit_inspection(request.user, inspection),
+        },
+    )
+
+
+@login_required
+def inspection_node_prepare(request, inspection_pk, node_pk):
+    inspection = inspection_for_user(request.user, inspection_pk)
+    node = get_object_or_404(
+        inspection.inspection_nodes.all(),
+        pk=node_pk,
+        scope_state=ScopeState.ACTIVE,
+    )
+    breadcrumbs, children = _node_navigation(node)
+    return render(
+        request,
+        "core/inspection_node_prepare.html",
+        {
+            "inspection": inspection,
+            "node": node,
+            "breadcrumbs": breadcrumbs,
+            "children": children,
+            "descriptions": node.specification_values.filter(
+                scope_state=ScopeState.ACTIVE
+            ).order_by("sort_order_snapshot", "id"),
+            "items": node.item_results.filter(
+                scope_state=ScopeState.ACTIVE
+            ).order_by("sort_order_snapshot", "id"),
+            "can_edit": can_edit_inspection(request.user, inspection),
+        },
+    )
+
+@login_required
+def inspection_scope(request, pk):
+    inspection = inspection_for_user(request.user, pk)
+    editable = can_edit_inspection(request.user, inspection)
+
+    if request.method == "POST":
+        if not editable:
+            raise PermissionDenied("لا تملك صلاحية تعديل نطاق هذه الزيارة.")
+
+        action = request.POST.get("action", "")
+        try:
+            if action in {"add_branch", "add_spec", "add_item"} and inspection.master_version_id is None:
+                raise ValidationError("هذه الزيارة بدأت دون مرجع مصدر؛ أضف محتوى محليًا من مساحة التحضير.")
+            if action == "add_branch":
+                source = get_object_or_404(
+                    StructureNode,
+                    pk=request.POST.get("source_node_id"),
+                    master_version=inspection.master_version,
+                )
+                add_scope_branch(inspection, source)
+                messages.success(request, "أضيف الفرع ومحتواه النشط إلى نطاق الزيارة.")
+
+            elif action == "add_spec":
+                source = get_object_or_404(
+                    SpecificationDefinition.objects.select_related("node"),
+                    pk=request.POST.get("source_spec_id"),
+                    node__master_version=inspection.master_version,
+                )
+                add_scope_specification(inspection, source)
+                messages.success(request, "أضيف الوصف إلى نطاق الزيارة.")
+
+            elif action == "add_item":
+                source = get_object_or_404(
+                    ChecklistItem.objects.select_related("node"),
+                    pk=request.POST.get("source_item_id"),
+                    node__master_version=inspection.master_version,
+                )
+                add_scope_item(inspection, source)
+                messages.success(request, "أضيف البند إلى نطاق الزيارة.")
+
+            elif action == "exclude_node":
+                snapshot = get_object_or_404(
+                    InspectionNode,
+                    pk=request.POST.get("snapshot_id"),
+                    inspection=inspection,
+                )
+                exclude_scope_node(snapshot)
+                messages.success(request, "أخرج الفرع من النطاق مع الاحتفاظ ببياناته.")
+
+            elif action == "restore_node":
+                snapshot = get_object_or_404(
+                    InspectionNode.objects.select_related("source_node"),
+                    pk=request.POST.get("snapshot_id"),
+                    inspection=inspection,
+                    source_node__isnull=False,
+                )
+                add_scope_branch(inspection, snapshot.source_node)
+                messages.success(request, "أعيد الفرع إلى النطاق واستعيدت بياناته السابقة.")
+
+            elif action == "exclude_spec":
+                value = get_object_or_404(
+                    SpecificationValue,
+                    pk=request.POST.get("snapshot_id"),
+                    inspection_node__inspection=inspection,
+                )
+                exclude_scope_specification(value)
+                messages.success(request, "أخرج الوصف من النطاق مع الاحتفاظ بقيمته.")
+
+            elif action == "restore_spec":
+                value = get_object_or_404(
+                    SpecificationValue.objects.select_related("source_specification__node"),
+                    pk=request.POST.get("snapshot_id"),
+                    inspection_node__inspection=inspection,
+                    source_specification__isnull=False,
+                )
+                add_scope_specification(inspection, value.source_specification)
+                messages.success(request, "أعيد الوصف إلى النطاق بقيمته السابقة.")
+
+            elif action == "exclude_item":
+                result = get_object_or_404(
+                    InspectionItemResult,
+                    pk=request.POST.get("snapshot_id"),
+                    inspection_node__inspection=inspection,
+                )
+                exclude_scope_item(result)
+                messages.success(request, "أخرج البند من النطاق مع الاحتفاظ بنتيجته.")
+
+            elif action == "restore_item":
+                result = get_object_or_404(
+                    InspectionItemResult.objects.select_related("source_item__node"),
+                    pk=request.POST.get("snapshot_id"),
+                    inspection_node__inspection=inspection,
+                    source_item__isnull=False,
+                )
+                add_scope_item(inspection, result.source_item)
+                messages.success(request, "أعيد البند إلى النطاق بنتيجته السابقة.")
+
+            else:
+                messages.error(request, "إجراء نطاق غير معروف.")
+        except ValidationError as exc:
+            messages.error(request, " ".join(exc.messages))
+
+        return redirect("inspection_scope", pk=inspection.pk)
+
+    return render(
+        request,
+        "core/inspection_scope.html",
+        {
+            "inspection": inspection,
+            "rows": scope_reference_rows(inspection),
+            "can_edit": editable,
+            "scope_state": ScopeState,
+            "scope_role": ScopeRole,
         },
     )
 
@@ -169,7 +466,12 @@ def inspection_node(request, inspection_pk, node_pk):
         inspection.inspection_nodes.all(),
         pk=node_pk,
     )
+    if node.scope_state != ScopeState.ACTIVE:
+        raise Http404("هذا العنصر خارج نطاق الزيارة الحالي.")
+
     editable = can_edit_inspection(request.user, inspection)
+    node_notes_enabled = node.scope_role == ScopeRole.SELECTED
+    breadcrumbs, children = _node_navigation(node)
 
     if request.method == "POST" and not editable:
         if inspection.status == InspectionStatus.COMPLETED:
@@ -180,6 +482,7 @@ def inspection_node(request, inspection_pk, node_pk):
         request.POST or None,
         node=node,
         readonly=not editable,
+        node_notes_enabled=node_notes_enabled,
     )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
@@ -197,6 +500,9 @@ def inspection_node(request, inspection_pk, node_pk):
             "specification_blocks": form.specification_blocks,
             "item_blocks": form.item_blocks,
             "can_edit": editable,
+            "node_notes_enabled": node_notes_enabled,
+            "breadcrumbs": breadcrumbs,
+            "children": children,
         },
     )
 
@@ -235,19 +541,30 @@ def inspection_complete(request, pk):
         messages.info(request, "هذه الزيارة مكتملة بالفعل.")
         return redirect("inspection_detail", pk=inspection.pk)
 
+    required_missing = incomplete_required_scope_count(inspection)
     form = InspectionCompletionForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        inspection.status = InspectionStatus.COMPLETED
-        inspection.save(update_fields=["status", "updated_at"])
-        messages.success(request, "تم إنهاء الزيارة. أصبحت البيانات للقراءة فقط.")
-        return redirect("inspection_detail", pk=inspection.pk)
+        if required_missing:
+            form.add_error(
+                None,
+                f"لا يمكن إنهاء الزيارة قبل حسم {required_missing} عنصرًا إلزاميًا.",
+            )
+        else:
+            inspection.status = InspectionStatus.COMPLETED
+            inspection.save(update_fields=["status", "updated_at"])
+            messages.success(request, "تم إنهاء الزيارة. أصبحت البيانات للقراءة فقط.")
+            return redirect("inspection_detail", pk=inspection.pk)
 
-    unchecked = InspectionItemResult.objects.filter(
-        inspection_node__inspection=inspection,
+    unchecked = active_item_results(inspection).filter(
         status=ResultStatus.UNCHECKED,
     ).count()
     return render(
         request,
         "core/inspection_complete.html",
-        {"inspection": inspection, "form": form, "unchecked": unchecked},
+        {
+            "inspection": inspection,
+            "form": form,
+            "unchecked": unchecked,
+            "required_missing": required_missing,
+        },
     )

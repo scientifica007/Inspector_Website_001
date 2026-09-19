@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}حذف مسودة الزيارة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">مسودة زيارة #{{ inspection.pk }}</p>
+    <h1>حذف مسودة الزيارة</h1>
+    <p class="hint">{{ inspection.institution.name }} · {{ inspection.visit_date }}</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">إلغاء</a>
+</section>
+
+<section class="card danger-zone">
+  <h2>تأكيد الحذف</h2>
+  <p>سيُحذف Draft الزيارة وما أُدخل داخله نهائيًا. المرجع الأصلي في مكتبة المراجع لا يتغير.</p>
+  <p class="hint">هذا الإجراء غير متاح للزيارات المكتملة.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="danger-outline" type="submit">حذف المسودة نهائيًا</button>
+  </form>
+</section>
+{% endblock %}

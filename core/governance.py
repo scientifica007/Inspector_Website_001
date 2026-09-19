@@ -15,10 +15,12 @@ from .models import (
     SpecificationDefinition,
     StructureNode,
 )
-from .services import create_draft_from_latest_published
 
 def _target_draft_node(proposal, draft):
     payload = proposal.payload or {}
+    if proposal.proposal_type == ProposalType.NODE and payload.get("target_root"):
+        return None
+
     stable_id = payload.get("target_node_stable_id")
     if stable_id:
         try:
@@ -100,53 +102,10 @@ def approve_proposal(proposal, user, payload, note=""):
         )
         return proposal, True
 
-    draft, _ = create_draft_from_latest_published()
-    target = _target_draft_node(proposal, draft)
-
-    if proposal.proposal_type == ProposalType.NODE:
-        obj = StructureNode.objects.create(
-            master_version=draft,
-            parent=target,
-            title=payload["title"],
-            description=payload.get("description", ""),
-            inspectable=payload.get("inspectable", True),
-            sort_order=payload.get("sort_order", 0),
-            active=True,
-        )
-    elif proposal.proposal_type == ProposalType.SPECIFICATION:
-        obj = SpecificationDefinition.objects.create(
-            node=target,
-            title=payload["title"],
-            field_type=payload["field_type"],
-            required=payload.get("required", False),
-            options=list(payload.get("options", [])),
-            help_text=payload.get("help_text", ""),
-            sort_order=payload.get("sort_order", 0),
-            active=True,
-        )
-    elif proposal.proposal_type == ProposalType.ITEM:
-        obj = ChecklistItem.objects.create(
-            node=target,
-            title=payload["title"],
-            guidance=payload.get("guidance", ""),
-            sort_order=payload.get("sort_order", 0),
-            active=True,
-        )
-    else:
-        raise ValidationError("نوع اقتراح غير مدعوم.")
-
-    _resolve(
-        proposal,
-        user,
-        ProposalStatus.APPROVED,
-        note,
-        {
-            "object_id": obj.id,
-            "stable_id": str(obj.stable_id),
-            "draft_version": draft.number,
-        },
+    raise ValidationError(
+        "اقتراحات عناصر الزيارة القديمة محفوظة للتاريخ ولا تُعمم منفردة في A-C3. "
+        "التعميم الجديد يتم بإرسال مرجع خاص كامل للمراجعة."
     )
-    return proposal, True
 
 @transaction.atomic
 def reject_proposal(proposal, user, note=""):

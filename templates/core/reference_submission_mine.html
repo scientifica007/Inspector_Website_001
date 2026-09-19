@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}اقتراحاتي للتعميم{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div><p class="eyebrow">مراجعي الخاصة</p><h1>اقتراحاتي للتعميم</h1><p class="hint">الاقتراح Snapshot ثابتة؛ تعديل مرجعك الخاص لاحقًا لا يغير ما أُرسل.</p></div>
+  <a class="secondary button-link" href="{% url 'reference_list' %}">المراجع</a>
+</section>
+<section class="card">
+  {% for submission in submissions %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ submission.source_name_snapshot }}</strong>
+        <small class="hint">{{ submission.created_at }} · {{ submission.get_status_display }}</small>
+        {% if submission.resulting_reference %}<small class="hint">عُمّم باسم: {{ submission.resulting_reference.name }}</small>{% endif %}
+      </div>
+      {% if submission.status == "PENDING" %}
+      <form method="post" action="{% url 'withdraw_reference_submission' submission.pk %}">
+        {% csrf_token %}<button class="danger-outline" type="submit">سحب الاقتراح</button>
+      </form>
+      {% endif %}
+    </div>
+  {% empty %}<p>لم ترسل أي مرجع للتعميم بعد.</p>{% endfor %}
+</section>
+{% endblock %}

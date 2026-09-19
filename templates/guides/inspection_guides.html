@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}الأدلة المقترحة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · {{ inspection.reference_name_snapshot }}</p>
+    <h1>الأدلة المقترحة</h1>
+    <p class="hint">الدليل اقتراح اختياري. تطبيقه لا يقفل العناصر ولا يجعلها إلزامية للإكمال.</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+</section>
+
+{% if not can_edit %}
+<section class="readonly-banner" role="status">هذه الزيارة للقراءة فقط؛ لا يمكن تطبيق دليل جديد.</section>
+{% endif %}
+
+<section class="card">
+  <h2>الأدلة المتوافقة مع مرجع الزيارة</h2>
+  {% for guide in guides %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ guide.name }}</strong>
+        {% if guide.description %}<small class="hint">{{ guide.description }}</small>{% endif %}
+        <small class="hint">{{ guide.entries.count }} اقتراحًا</small>
+      </div>
+      {% if guide.pk in applied_ids %}
+        <span class="badge">مطبق</span>
+      {% elif can_edit %}
+        <form method="post" action="{% url 'apply_inspection_guide' inspection.pk guide.pk %}">
+          {% csrf_token %}
+          <button class="primary" type="submit">تطبيق الدليل</button>
+        </form>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="hint">لا توجد أدلة متوافقة مع مرجع مصدر هذه الزيارة.</p>
+  {% endfor %}
+</section>
+
+{% if applications %}
+<section class="card">
+  <h2>سجل تطبيق الأدلة</h2>
+  {% for application in applications %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ application.guide_name_snapshot }}</strong>
+        <small class="hint">
+          {{ application.applied_at }} · {{ application.applied_count }} متوافق · {{ application.skipped_count }} غير موجود في لقطة الزيارة
+        </small>
+      </div>
+      {% if application.skipped_count %}<span class="badge scope-badge-excluded">جزئي</span>{% else %}<span class="badge">كامل</span>{% endif %}
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

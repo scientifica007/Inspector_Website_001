@@ -1,54 +1,37 @@
 {% extends "base.html" %}
-{% block title %}هندسة المرجع{% endblock %}
+{% block title %}مكتبة المراجع{% endblock %}
 {% block content %}
 <section class="page-head">
   <div>
-    <p class="eyebrow">Admin Builder</p>
-    <h1>هندسة مرجع التفتيش</h1>
-    {% if draft %}<p class="hint">المسودة الحالية: v{{ draft.number }}</p>{% endif %}
+    <p class="eyebrow">Admin · مكتبة المراجع</p>
+    <h1>مراجع التفتيش</h1>
+    <p class="hint">كل مرجع مستقل. إنشاء أو تعديل مرجع لا يلغي المراجع الأخرى.</p>
   </div>
-  {% if draft %}
-    <div class="actions">
-      <a class="secondary button-link" href="{% url 'builder_preview' %}">معاينة</a>
-      <a class="secondary button-link" href="{% url 'builder_publish' %}">نشر المسودة</a>
-      <a class="primary button-link" href="{% url 'builder_node_create' %}">+ عنصر رئيسي</a>
-    </div>
-  {% endif %}
+  <a class="primary button-link" href="{% url 'builder_reference_create' %}">+ مرجع مشترك</a>
 </section>
 
-{% if not draft %}
-<section class="card empty-builder">
-  <h2>لا توجد مسودة قابلة للتحرير</h2>
-  <p>أنشئ مسودة جديدة. إذا كان هناك مرجع منشور فسيتم نسخه إلى المسودة دون تعديل الأصل.</p>
-  <form method="post" action="{% url 'builder_draft_create' %}">
-    {% csrf_token %}
-    <button class="primary" type="submit">إنشاء مسودة</button>
-  </form>
-</section>
-{% else %}
 <section class="card">
-  <div class="builder-summary">
-    <strong>شجرة المرجع</strong>
-    <span>{{ tree|length }} عنصر</span>
-  </div>
-  {% if tree %}
-    <div class="tree-list">
-      {% for node, depth in tree %}
-        <a class="tree-row {% if not node.active %}muted-row{% endif %}" style="--depth:{{ depth }}" href="{% url 'builder_node' node.pk %}">
-          <span class="tree-branch" aria-hidden="true">↳</span>
-          <span>
-            <strong>{{ node.title }}</strong>
-            <small>{% if node.inspectable %}قابل للتفتيش{% else %}حاوية تنظيمية{% endif %}{% if not node.active %} · معطل{% endif %}</small>
-          </span>
-        </a>
+  {% if references %}
+    <div class="prepare-list">
+      {% for reference in references %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ reference.name }}</strong>
+          <div class="prepare-node-meta">
+            <span class="badge">{{ reference.get_visibility_display }}</span>
+            {% if reference.owner %}<span class="hint">المالك: {{ reference.owner.username }}</span>{% else %}<span class="hint">إداري</span>{% endif %}
+            <span class="hint">{{ reference.nodes.count }} عنصر رئيسي/فرعي</span>
+          </div>
+        </div>
+        <a class="secondary button-link" href="{% url 'builder_reference' reference.pk %}">فتح المرجع</a>
+      </div>
       {% endfor %}
     </div>
   {% else %}
     <div class="empty-state">
-      <p>المسودة فارغة.</p>
-      <a class="primary button-link" href="{% url 'builder_node_create' %}">أضف أول عنصر</a>
+      <p>لا توجد مراجع بعد.</p>
+      <a class="primary button-link" href="{% url 'builder_reference_create' %}">إنشاء أول مرجع</a>
     </div>
   {% endif %}
 </section>
-{% endif %}
 {% endblock %}

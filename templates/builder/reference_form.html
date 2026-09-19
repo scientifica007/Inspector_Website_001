@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin · مكتبة المراجع</p>
+    <h1>{{ title }}</h1>
+  </div>
+  <a class="secondary button-link" href="{% if reference %}{% url 'builder_reference' reference.pk %}{% else %}{% url 'builder_home' %}{% endif %}">إلغاء</a>
+</section>
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
+    {% endfor %}
+    <button class="primary" type="submit">حفظ</button>
+  </form>
+</section>
+{% endblock %}

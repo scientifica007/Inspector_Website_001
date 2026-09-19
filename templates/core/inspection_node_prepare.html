@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}تحضير {{ node.title_snapshot }}{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="مسار المجال">
+  <a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a>
+  <span aria-hidden="true">←</span>
+  <a href="{% url 'inspection_prepare' inspection.pk %}">تحضير الزيارة</a>
+  {% for crumb in breadcrumbs %}
+    <span aria-hidden="true">←</span>
+    {% if crumb.pk == node.pk %}
+      <span aria-current="page">{{ crumb.title_snapshot }}</span>
+    {% else %}
+      <a href="{% url 'inspection_node_prepare' inspection.pk crumb.pk %}">{{ crumb.title_snapshot }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<section class="page-head">
+  <div>
+    <p class="eyebrow">تحضير المجال</p>
+    <h1>
+      {{ node.title_snapshot }}
+      {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+      {% if node.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+      {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}
+      {% if node.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+    </h1>
+    {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+</section>
+
+{% if can_edit %}
+<nav class="local-additions local-actions" aria-label="إضافات التحضير">
+  <span>إضافة:</span>
+  <a class="secondary button-link" href="{% url 'local_node_add' inspection.pk node.pk %}">+ فرع</a>
+  <a class="secondary button-link" href="{% url 'local_spec_add' inspection.pk node.pk %}">+ وصف</a>
+  <a class="secondary button-link" href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
+</nav>
+
+<nav class="authoring-toolbar" aria-label="عمليات المجال">
+  {% if node.scope_origin == "LOCAL" %}
+    <a class="secondary button-link" href="{% url 'local_node_edit' inspection.pk node.pk %}">تعديل الفرع</a>
+    <a class="secondary button-link" href="{% url 'local_node_copy' inspection.pk node.pk %}">نسخ إلى...</a>
+    <a class="secondary button-link" href="{% url 'local_node_move' inspection.pk node.pk %}">نقل إلى...</a>
+    <form method="post" action="{% url 'local_node_duplicate' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">تكرار هنا</button>
+    </form>
+    <form method="post" action="{% url 'local_node_remove' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="danger-outline" type="submit">إخراج مع الحفظ</button>
+    </form>
+  {% else %}
+    <a class="secondary button-link" href="{% url 'local_node_copy' inspection.pk node.pk %}">نسخ كفرع محلي إلى...</a>
+    <form method="post" action="{% url 'local_node_duplicate' inspection.pk node.pk %}">
+      {% csrf_token %}
+      <button class="secondary" type="submit">نسخ هنا كمحلي</button>
+    </form>
+  {% endif %}
+</nav>
+{% else %}
+<section class="readonly-banner" role="status">عرض التحضير للقراءة فقط.</section>
+{% endif %}
+
+<div class="prepare-summary">
+  {% if children %}
+  <section class="card">
+    <h2>الفروع التابعة</h2>
+    <div class="prepare-list">
+      {% for child in children %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ child.title_snapshot }}</strong>
+          {% if child.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+          {% if child.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+          {% if child.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+          {% if child.description_snapshot %}<small class="hint">{{ child.description_snapshot }}</small>{% endif %}
+        </div>
+        <a class="secondary button-link" href="{% url 'inspection_node_prepare' inspection.pk child.pk %}">فتح الفرع</a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if descriptions %}
+  <section class="card">
+    <h2>الأوصاف</h2>
+    <div class="prepare-list">
+      {% for description in descriptions %}
+      <div class="prepare-list-row authoring-row">
+        <div>
+          <strong>{{ description.title_snapshot }}</strong>
+          <div class="prepare-node-meta">
+            <span class="hint">{{ description.get_field_type_snapshot_display }}</span>
+            {% if description.required_snapshot %}<span class="badge">إلزامي عند التنفيذ</span>{% endif %}
+            {% if description.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+            {% if description.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if description.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if description.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          </div>
+        </div>
+        {% if can_edit %}
+        <div class="row-actions authoring-row-actions">
+          {% if description.scope_origin == "LOCAL" %}
+            <a href="{% url 'local_spec_edit' inspection.pk description.pk %}">تعديل</a>
+            <a href="{% url 'local_spec_move' inspection.pk description.pk %}">نقل</a>
+          {% endif %}
+          <a href="{% url 'local_spec_copy' inspection.pk description.pk %}">نسخ إلى...</a>
+          <form method="post" action="{% url 'local_spec_duplicate' inspection.pk description.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">تكرار هنا</button>
+          </form>
+          {% if description.scope_origin == "LOCAL" %}
+          <form method="post" action="{% url 'local_spec_remove' inspection.pk description.pk %}">
+            {% csrf_token %}
+            <button class="text-action danger-text" type="submit">إخراج</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if items %}
+  <section class="card">
+    <h2>بنود التفتيش</h2>
+    <div class="prepare-list">
+      {% for item in items %}
+      <div class="prepare-list-row authoring-row">
+        <div>
+          <strong>{{ item.title_snapshot }}</strong>
+          {% if item.guidance_snapshot %}<small class="hint">{{ item.guidance_snapshot }}</small>{% endif %}
+          {% if item.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+          {% if item.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+          {% if item.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+          {% if item.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+        </div>
+        {% if can_edit %}
+        <div class="row-actions authoring-row-actions">
+          {% if item.scope_origin == "LOCAL" %}
+            <a href="{% url 'local_item_edit' inspection.pk item.pk %}">تعديل</a>
+            <a href="{% url 'local_item_move' inspection.pk item.pk %}">نقل</a>
+          {% endif %}
+          <a href="{% url 'local_item_copy' inspection.pk item.pk %}">نسخ إلى...</a>
+          <form method="post" action="{% url 'local_item_duplicate' inspection.pk item.pk %}">
+            {% csrf_token %}
+            <button class="text-action" type="submit">تكرار هنا</button>
+          </form>
+          {% if item.scope_origin == "LOCAL" %}
+          <form method="post" action="{% url 'local_item_remove' inspection.pk item.pk %}">
+            {% csrf_token %}
+            <button class="text-action danger-text" type="submit">إخراج</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not children and not descriptions and not items %}
+  <section class="card empty-state">
+    <p>هذا المجال لا يحتوي عناصر محضّرة بعد.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

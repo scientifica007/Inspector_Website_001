@@ -1,6 +1,6 @@
-EXPORT_SCHEMA = "inspection-export-v1"
+EXPORT_SCHEMA = "inspection-export-v4"
 
-from .models import ProposalType
+from .models import ProposalType, ScopeOrigin
 
 def _proposal_index(inspection):
     index = {}
@@ -19,6 +19,76 @@ def _proposal_trace(index, proposal_type, local_id):
         "status": proposal.status,
         "resolution_data": proposal.resolution_data or {},
     }
+
+def _scope_payload(entry, *, include_role=False, include_completion=False):
+    payload = {
+        "origin": entry.scope_origin,
+        "state": entry.scope_state,
+        "locked": entry.scope_locked,
+    }
+    if include_role:
+        payload["role"] = entry.scope_role
+    if include_completion:
+        payload["completion_required"] = entry.completion_required
+    return payload
+
+def _assignment_payloads(inspection):
+    payloads = []
+    assignments = inspection.assignments.prefetch_related("entries").select_related(
+        "created_by",
+        "issued_by",
+        "revoked_by",
+    ).order_by("created_at", "id")
+    for assignment in assignments:
+        payloads.append(
+            {
+                "id": assignment.id,
+                "title": assignment.title,
+                "description": assignment.description,
+                "status": assignment.status,
+                "created_by": (
+                    assignment.created_by.username
+                    if assignment.created_by_id
+                    else None
+                ),
+                "issued_by": (
+                    assignment.issued_by.username
+                    if assignment.issued_by_id
+                    else None
+                ),
+                "issued_at": (
+                    assignment.issued_at.isoformat()
+                    if assignment.issued_at
+                    else None
+                ),
+                "revoked_by": (
+                    assignment.revoked_by.username
+                    if assignment.revoked_by_id
+                    else None
+                ),
+                "revoked_at": (
+                    assignment.revoked_at.isoformat()
+                    if assignment.revoked_at
+                    else None
+                ),
+                "revocation_reason": assignment.revocation_reason,
+                "entries": [
+                    {
+                        "entry_type": entry.entry_type,
+                        "stable_id": str(entry.stable_id),
+                        "label": entry.label_snapshot,
+                        "scope_locked": entry.scope_locked,
+                        "completion_required": entry.completion_required,
+                        "sort_order": entry.sort_order,
+                    }
+                    for entry in assignment.entries.all().order_by(
+                        "sort_order", "id"
+                    )
+                ],
+            }
+        )
+    return payloads
+
 
 def build_inspection_export(inspection):
     proposal_index = _proposal_index(inspection)
@@ -49,9 +119,9 @@ def build_inspection_export(inspection):
                 "options": list(spec.options_snapshot or []),
                 "help_text": spec.help_text_snapshot,
                 "value": spec.value,
-                "local_addition": spec.local_addition,
+                "scope": _scope_payload(spec, include_completion=True),
             }
-            if spec.local_addition:
+            if spec.scope_origin == ScopeOrigin.LOCAL:
                 payload["proposal"] = _proposal_trace(
                     proposal_index, ProposalType.SPECIFICATION, spec.id
                 )
@@ -70,9 +140,9 @@ def build_inspection_export(inspection):
                 "guidance": item.guidance_snapshot,
                 "status": item.status,
                 "observation": item.observation,
-                "local_addition": item.local_addition,
+                "scope": _scope_payload(item, include_completion=True),
             }
-            if item.local_addition:
+            if item.scope_origin == ScopeOrigin.LOCAL:
                 payload["proposal"] = _proposal_trace(
                     proposal_index, ProposalType.ITEM, item.id
                 )
@@ -85,14 +155,15 @@ def build_inspection_export(inspection):
             ),
             "title": node.title_snapshot,
             "description": node.description_snapshot,
-            "local_addition": node.local_addition,
+            "inspectable": node.inspectable_snapshot,
+            "scope": _scope_payload(node, include_role=True),
             "specifications": specifications,
             "checklist_items": items,
             "additional_observations": node.additional_observations,
             "recommendations": node.recommendations,
             "children": [node_payload(child) for child in children.get(node.id, [])],
         }
-        if node.local_addition:
+        if node.scope_origin == ScopeOrigin.LOCAL:
             payload["proposal"] = _proposal_trace(
                 proposal_index, ProposalType.NODE, node.id
             )
@@ -104,6 +175,7 @@ def build_inspection_export(inspection):
             "id": inspection.id,
             "visit_date": inspection.visit_date.isoformat(),
             "status": inspection.status,
+            "scope_mode": inspection.scope_mode,
             "institution": {
                 "id": inspection.institution_id,
                 "name": inspection.institution.name,
@@ -114,12 +186,13 @@ def build_inspection_export(inspection):
                 "id": inspection.inspector_id,
                 "username": inspection.inspector.username,
             },
-            "master_version": {
-                "id": inspection.master_version_id,
-                "number": inspection.master_version.number,
+            "reference": {
+                "id": inspection.source_reference_id,
+                "name": inspection.reference_name_snapshot,
             },
             "general_observations": inspection.general_observations,
             "general_recommendations": inspection.general_recommendations,
+            "assignments": _assignment_payloads(inspection),
             "nodes": [node_payload(node) for node in children.get(None, [])],
         },
     }

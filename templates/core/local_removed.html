@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}المحتوى المحلي المستبعد{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · تحضير الزيارة</p>
+    <h1>المحتوى المحلي المستبعد</h1>
+    <p class="hint">هذه العناصر لم تُحذف. يمكن استعادتها مع بياناتها السابقة.</p>
+  </div>
+  <a class="secondary button-link" href="{% url 'inspection_prepare' inspection.pk %}">العودة للتحضير</a>
+</section>
+
+{% if nodes %}
+<section class="card removed-section">
+  <h2>الفروع</h2>
+  <div class="prepare-list">
+    {% for node in nodes %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ node.title_snapshot }}</strong>
+          {% if node.parent %}<small class="hint">داخل: {{ node.parent.title_snapshot }}</small>{% else %}<small class="hint">في جذر الزيارة</small>{% endif %}
+        </div>
+        <form method="post" action="{% url 'local_node_restore' inspection.pk node.pk %}">
+          {% csrf_token %}
+          <button class="primary" type="submit">استعادة</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if descriptions %}
+<section class="card removed-section">
+  <h2>الأوصاف</h2>
+  <div class="prepare-list">
+    {% for description in descriptions %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ description.title_snapshot }}</strong>
+          <small class="hint">{{ description.inspection_node.title_snapshot }}</small>
+        </div>
+        <form method="post" action="{% url 'local_spec_restore' inspection.pk description.pk %}">
+          {% csrf_token %}
+          <button class="primary" type="submit">استعادة</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if items %}
+<section class="card removed-section">
+  <h2>بنود التفتيش</h2>
+  <div class="prepare-list">
+    {% for item in items %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ item.title_snapshot }}</strong>
+          <small class="hint">{{ item.inspection_node.title_snapshot }}</small>
+        </div>
+        <form method="post" action="{% url 'local_item_restore' inspection.pk item.pk %}">
+          {% csrf_token %}
+          <button class="primary" type="submit">استعادة</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if not nodes and not descriptions and not items %}
+<section class="card empty-state">
+  <p>لا يوجد محتوى محلي مستبعد حاليًا.</p>
+</section>
+{% endif %}
+{% endblock %}

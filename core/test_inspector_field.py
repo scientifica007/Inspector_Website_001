@@ -154,8 +154,8 @@ class InspectorFieldWorkflowTests(TestCase):
         titles = list(inspection.inspection_nodes.values_list("title_snapshot", flat=True))
         self.assertEqual(titles, [visible.title])
 
-    def test_inspection_creation_view_materializes_snapshot(self):
-        root, _, _, _ = self.build_reference()
+    def test_inspection_creation_view_starts_with_empty_selective_scope(self):
+        self.build_reference()
         self.client.login(username="field-inspector", password="test-pass-123")
         response = self.client.post(
             reverse("inspection_create"),
@@ -163,7 +163,8 @@ class InspectorFieldWorkflowTests(TestCase):
         )
         inspection = Inspection.objects.get(inspector=self.inspector)
         self.assertRedirects(response, reverse("inspection_detail", args=[inspection.pk]))
-        self.assertTrue(inspection.inspection_nodes.filter(source_node=root).exists())
+        self.assertEqual(inspection.scope_mode, "SELECTIVE")
+        self.assertFalse(inspection.inspection_nodes.exists())
 
     def test_other_inspector_cannot_open_visit_or_node(self):
         root, _, _, _ = self.build_reference()

@@ -2,9 +2,11 @@ from django import forms
 
 from .models import (
     FieldType,
+    InspectionNode,
     Institution,
     InstitutionVerificationStatus,
     ProposalType,
+    ScopeState,
 )
 
 class LocalNodeForm(forms.Form):
@@ -15,7 +17,7 @@ class LocalNodeForm(forms.Form):
     inspectable = forms.BooleanField(label="قابل للتفتيش مباشرة", required=False, initial=True)
 
 class LocalSpecificationForm(forms.Form):
-    title = forms.CharField(label="عنوان المواصفة", max_length=255)
+    title = forms.CharField(label="عنوان الوصف", max_length=255)
     field_type = forms.ChoiceField(label="نوع القيمة", choices=FieldType.choices)
     required = forms.BooleanField(label="إلزامية", required=False)
     options_text = forms.CharField(
@@ -46,6 +48,54 @@ class LocalItemForm(forms.Form):
     guidance = forms.CharField(
         label="توجيه/شرح", required=False, widget=forms.Textarea(attrs={"rows": 3})
     )
+
+class LocalTargetForm(forms.Form):
+    target_node = forms.ChoiceField(label="الوجهة", required=False)
+
+    def __init__(
+        self,
+        *args,
+        inspection,
+        allow_root=False,
+        exclude_node_ids=None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        exclude_node_ids = set(exclude_node_ids or [])
+        nodes = list(
+            InspectionNode.objects.filter(
+                inspection=inspection,
+                scope_state=ScopeState.ACTIVE,
+            )
+            .exclude(id__in=exclude_node_ids)
+            .select_related("parent")
+            .order_by("sort_order_snapshot", "id")
+        )
+        self.node_map = {str(node.id): node for node in nodes}
+
+        choices = []
+        if allow_root:
+            choices.append(("", "جذر الزيارة"))
+        for node in nodes:
+            parts = [node.title_snapshot]
+            parent = node.parent
+            while parent is not None:
+                parts.append(parent.title_snapshot)
+                parent = parent.parent
+            choices.append((str(node.id), " ← ".join(reversed(parts))))
+
+        self.fields["target_node"].choices = choices
+        self.fields["target_node"].required = not allow_root
+
+    def clean_target_node(self):
+        raw = self.cleaned_data.get("target_node", "")
+        if raw == "":
+            return None
+        try:
+            return self.node_map[str(raw)]
+        except KeyError as exc:
+            raise forms.ValidationError("الوجهة المختارة غير متاحة.") from exc
+
 
 class ProposalModerationForm(forms.Form):
     resolution_note = forms.CharField(

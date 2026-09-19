@@ -1,33 +1,25 @@
-# INSPECTION EXPORT SCHEMA — v1
+# INSPECTION EXPORT SCHEMA — v4
 
 اسم المخطط:
 
-`inspection-export-v1`
+`inspection-export-v4`
 
 ## الهدف
 
-إخراج نسخة منظمة من الزيارة يمكن:
-- أرشفتها؛
-- فحصها يدويًا؛
-- تمريرها لاحقًا إلى ذكاء اصطناعي خارجي لبناء تقرير؛
-- معالجتها برمجيًا دون الاعتماد على HTML.
-
-الموقع في V1 **لا يولد التقرير بالذكاء الاصطناعي داخله**.
+إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية والتاريخية الفعلية، بما في ذلك:
+- نطاق الزيارة؛
+- مرجع المصدر التاريخي؛
+- التكليفات الرسمية وتاريخ إصدارها/إلغائها.
 
 ## مصدر الحقيقة
 
-التصدير مبني على **Inspection Snapshot** الخاصة بالزيارة، وليس على الصياغة الحالية للـMaster.
-
-لذلك:
-- تعديل عنوان مجال لاحقًا لا يغير Export زيارة قديمة؛
-- تعديل خيارات مواصفة لاحقًا لا يغير تعريف المواصفة المحفوظ مع الزيارة؛
-- تعديل بند لاحقًا لا يغير نص البند التاريخي.
+التصدير مبني على Inspection Snapshots المثبتة للزيارة. تعديل المرجع المصدر أو حذفه لاحقًا لا يعيد تفسير الزيارة.
 
 ## المستوى الأعلى
 
 ```json
 {
-  "schema": "inspection-export-v1",
+  "schema": "inspection-export-v4",
   "inspection": {}
 }
 ```
@@ -38,89 +30,55 @@
 - `id`
 - `visit_date`
 - `status`
+- `scope_mode`
 - `institution`
 - `inspector`
-- `master_version`
+- `reference`
 - `general_observations`
 - `general_recommendations`
+- `assignments`
 - `nodes`
 
-## institution
+## reference
 
-يتضمن معرف المؤسسة واسمها ونوعها والبلدية كما هي مرتبطة بالزيارة.
+`id` هو معرّف المرجع الأصلي إذا كان ما يزال موجودًا، و`name` هو Snapshot لاسمه عند إنشاء الزيارة. اللقطة الداخلية المجمدة لا تُعرض كهوية Business.
 
-## inspector
+## assignments
 
-V1 يخرج:
-- `id`
-- `username`
+قائمة سجل التكليفات المرتبطة بالزيارة. كل عنصر يتضمن:
+- id
+- title / description
+- status: DRAFT | ISSUED | REVOKED
+- created_by
+- issued_by / issued_at
+- revoked_by / revoked_at / revocation_reason
+- entries
 
-ولا يضيف البريد أو كلمة المرور أو Session أو Token.
+كل Entry يتضمن:
+- entry_type
+- stable_id
+- label
+- scope_locked
+- completion_required
+- sort_order
 
-## master_version
-
-يتضمن:
-- معرف إصدار المرجع؛
-- رقم الإصدار.
+وجود Assignment في التاريخ لا يعني أن قيوده ما تزال فعالة؛ الحالة الفعالة تظهر أيضًا في Scope metadata لكل Snapshot.
 
 ## nodes
 
-قائمة Recursive. كل Node يتضمن:
-- `snapshot_id`
-- `source_stable_id` إن كان مصدره Master
-- `title`
-- `description`
-- `local_addition`
-- `specifications`
-- `checklist_items`
-- `additional_observations`
-- `recommendations`
-- `children`
+كل Node يتضمن Snapshot ID وStable ID للمصدر إن بقي، العنوان والوصف وinspectable وScope metadata والأوصاف والبنود والبيانات الميدانية والأبناء.
 
-## specifications
+Scope metadata تتضمن:
+- origin
+- state
+- locked
+- role عند Node
+- completion_required عند الوصف والبند
 
-كل مواصفة تتضمن:
-- Snapshot ID
-- Stable ID للمصدر إن وجد
-- العنوان
-- نوع الحقل
-- هل كانت إلزامية
-- خياراتها التاريخية
-- Help text التاريخي
-- القيمة
-- Local-addition flag
-- Proposal trace إذا كانت إضافة محلية ولها Proposal
+## Local governance history
 
-## checklist_items
+الإضافات الجديدة داخل الزيارة لا تولد Proposal تلقائيًا. في الزيارات التاريخية قد يبقى Proposal trace القديم حفاظًا على التاريخ.
 
-كل بند يتضمن:
-- Snapshot ID
-- Stable ID للمصدر إن وجد
-- العنوان التاريخي
-- Guidance التاريخي
-- الحالة
-- المعاينة/الملاحظة
-- Local-addition flag
-- Proposal trace إن وجد
+## الترتيب وEncoding
 
-## Proposal trace
-
-لا يعيد تصدير Payload الإدارة كاملًا. يعرض أثرًا تشغيليًا محدودًا:
-- `proposal_id`
-- `status`
-- `resolution_data`
-
-## الترتيب
-
-Nodes والمواصفات والبنود تخرج حسب ترتيب Snapshot ثم ID كفاصل ثابت.
-
-لا يوجد `exported_at` في v1 حتى يبقى الناتج Deterministic لنفس حالة قاعدة البيانات.
-
-## Encoding
-
-الاستجابة:
-- JSON
-- UTF-8
-- `ensure_ascii=false`
-
-أي أن العربية تبقى مقروءة مباشرة داخل الملف.
+لا يوجد `exported_at` للمحافظة على Determinism. JSON UTF-8 ولا يحتوي أسرار اتصال أو Sessions أو Tokens.

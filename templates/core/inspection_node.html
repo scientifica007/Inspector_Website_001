@@ -1,23 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ node.title_snapshot }}{% endblock %}
 {% block content %}
+<nav class="breadcrumbs" aria-label="مسار المجال">
+  <a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a>
+  <span aria-hidden="true">←</span>
+  <a href="{% url 'inspection_execute' inspection.pk %}">تنفيذ الزيارة</a>
+  {% for crumb in breadcrumbs %}
+    <span aria-hidden="true">←</span>
+    {% if crumb.pk == node.pk %}
+      <span aria-current="page">{{ crumb.title_snapshot }}</span>
+    {% else %}
+      <a href="{% url 'inspection_node' inspection.pk crumb.pk %}">{{ crumb.title_snapshot }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
 <section class="page-head">
   <div>
-    <p class="eyebrow"><a href="{% url 'inspection_detail' inspection.pk %}">{{ inspection.institution.name }}</a></p>
-    <h1>{{ node.title_snapshot }} {% if node.local_addition %}<span class="local-badge">محلي</span>{% endif %}</h1>
+    <p class="eyebrow">تنفيذ الزيارة</p>
+    <h1>
+      {{ node.title_snapshot }}
+      {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+      {% if node.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+      {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}
+      {% if node.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+    </h1>
     {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
   </div>
-  <a class="secondary button-link" href="{% url 'inspection_detail' inspection.pk %}">العودة للزيارة</a>
+  <a class="secondary button-link" href="{% url 'inspection_execute' inspection.pk %}">العودة إلى التنفيذ</a>
 </section>
 
-{% if can_edit %}
-<nav class="local-additions" aria-label="إضافات ميدانية">
-  <span>إضافة ميدانية:</span>
-  <a href="{% url 'local_node_add' inspection.pk node.pk %}">+ فرع</a>
-  <a href="{% url 'local_spec_add' inspection.pk node.pk %}">+ مواصفة</a>
-  <a href="{% url 'local_item_add' inspection.pk node.pk %}">+ بند</a>
-</nav>
-{% else %}
+{% if not can_edit %}
 <section class="readonly-banner" role="status">عرض للقراءة فقط.</section>
 {% endif %}
 
@@ -27,13 +40,16 @@
 
   {% if specification_blocks %}
   <section class="card field-section">
-    <h2>المواصفات</h2>
+    <h2>الأوصاف</h2>
     <div class="field-grid">
       {% for block in specification_blocks %}
       <div class="field-block">
         <label for="{{ block.field.id_for_label }}">
           {{ block.field.label }}
-          {% if block.snapshot.local_addition %}<span class="local-badge">محلي</span>{% endif %}
+          {% if block.snapshot.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+          {% if block.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+          {% if block.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+          {% if block.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
         </label>
         {{ block.field }}
         {% if block.field.help_text %}<small class="hint">{{ block.field.help_text }}</small>{% endif %}
@@ -51,7 +67,13 @@
       {% for block in item_blocks %}
       <article class="inspection-item">
         <div class="item-heading">
-          <strong>{{ block.result.title_snapshot }} {% if block.result.local_addition %}<span class="local-badge">محلي</span>{% endif %}</strong>
+          <strong>
+            {{ block.result.title_snapshot }}
+            {% if block.result.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+            {% if block.result.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if block.result.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if block.result.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          </strong>
           {% if block.result.guidance_snapshot %}<small class="hint">{{ block.result.guidance_snapshot }}</small>{% endif %}
         </div>
         <div class="item-controls">
@@ -72,6 +94,7 @@
   </section>
   {% endif %}
 
+  {% if node_notes_enabled %}
   <section class="card field-section">
     <h2>معاينات وتوصيات المجال</h2>
     <div class="field-grid">
@@ -87,6 +110,11 @@
       </div>
     </div>
   </section>
+  {% elif not specification_blocks and not item_blocks %}
+  <section class="card field-section">
+    <p class="hint">هذا العنصر موجود كسياق بنيوي فقط. اختر محتوى داخله من «إدارة نطاق الزيارة» أو انتقل إلى العنصر المختار تحته.</p>
+  </section>
+  {% endif %}
 
   {% if can_edit %}
   <div class="sticky-save">
@@ -95,4 +123,31 @@
   </div>
   {% endif %}
 </form>
+
+{% if children %}
+<section class="card child-navigation">
+  <h2>الفروع التابعة</h2>
+  <div class="child-links">
+    {% for child in children %}
+      <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk child.pk %}">
+        {{ child.title_snapshot }}
+        {% if child.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+        {% if child.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<script>
+  (function () {
+    document.querySelectorAll(".status-select").forEach(function (select) {
+      function syncStatus() {
+        select.dataset.status = select.value || "UNCHECKED";
+      }
+      syncStatus();
+      select.addEventListener("change", syncStatus);
+    });
+  })();
+</script>
 {% endblock %}

@@ -16,6 +16,7 @@ from .models import (
     Proposal,
     ProposalStatus,
     ProposalType,
+    ReferenceVisibility,
     ResultStatus,
     Role,
     SpecificationDefinition,
@@ -29,7 +30,11 @@ class Gate2CoreTests(TestCase):
     def setUp(self):
         self.inspector = User.objects.create_user("inspector", password="test-pass-123")
         self.other = User.objects.create_user("other", password="test-pass-123")
-        self.published = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
+        self.published = MasterVersion.objects.create(
+            number=1,
+            name="مرجع أساسي",
+            status=MasterStatus.PUBLISHED,
+        )
         self.institution = Institution.objects.create(
             name="مؤسسة معتمدة",
             verification_status=InstitutionVerificationStatus.VERIFIED,
@@ -57,7 +62,7 @@ class Gate2CoreTests(TestCase):
             visit_date=date(2026, 9, 17),
         )
         self.client.login(username="inspector", password="test-pass-123")
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("inspection_list"))
         self.assertEqual(list(response.context["inspections"]), [own])
 
     def test_admin_sees_all_inspections(self):
@@ -76,7 +81,7 @@ class Gate2CoreTests(TestCase):
             visit_date=date(2026, 9, 17),
         )
         self.client.login(username="admin", password="test-pass-123")
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("inspection_list"))
         self.assertEqual(response.context["inspections"].count(), 2)
 
     def test_inspector_added_institution_is_pending_and_proposed(self):
@@ -126,25 +131,53 @@ class Gate2CoreTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "هذه المؤسسة موجودة مسبقًا")
 
-    def test_new_inspection_pins_latest_published_master(self):
-        MasterVersion.objects.create(number=2, status=MasterStatus.DRAFT)
-        latest = MasterVersion.objects.create(number=3, status=MasterStatus.PUBLISHED)
+    def test_new_inspection_uses_explicitly_selected_reference(self):
+        second = MasterVersion.objects.create(
+            number=2,
+            name="مرجع ثان",
+            status=MasterStatus.PUBLISHED,
+        )
         self.client.login(username="inspector", password="test-pass-123")
         response = self.client.post(
             reverse("inspection_create"),
-            {"institution": self.institution.id, "visit_date": "2026-09-18"},
+            {
+                "institution": self.institution.id,
+                "visit_date": "2026-09-18",
+                "reference": second.id,
+            },
         )
         inspection = Inspection.objects.get(inspector=self.inspector)
-        self.assertRedirects(response, reverse("inspection_detail", args=[inspection.pk]))
-        self.assertEqual(inspection.master_version, latest)
+        self.assertRedirects(
+            response,
+            reverse("inspection_detail", args=[inspection.pk]),
+        )
+        self.assertEqual(inspection.source_reference, second)
+        self.assertNotEqual(inspection.master_version_id, second.id)
+        self.assertEqual(
+            inspection.master_version.visibility,
+            ReferenceVisibility.SNAPSHOT,
+        )
+        self.assertEqual(inspection.reference_name_snapshot, "مرجع ثان")
         self.assertEqual(inspection.status, "DRAFT")
 
-    def test_inspection_creation_requires_published_master(self):
-        MasterVersion.objects.all().delete()
+    def test_new_inspection_can_start_without_reference(self):
         self.client.login(username="inspector", password="test-pass-123")
-        response = self.client.get(reverse("inspection_create"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "لا توجد نسخة منشورة")
+        response = self.client.post(
+            reverse("inspection_create"),
+            {
+                "institution": self.institution.id,
+                "visit_date": "2026-09-18",
+                "reference": "",
+            },
+        )
+        inspection = Inspection.objects.get(inspector=self.inspector)
+        self.assertRedirects(
+            response,
+            reverse("inspection_detail", args=[inspection.pk]),
+        )
+        self.assertIsNone(inspection.master_version_id)
+        self.assertIsNone(inspection.source_reference_id)
+        self.assertEqual(inspection.reference_name_snapshot, "")
 
     def test_recursive_structure(self):
         root = StructureNode.objects.create(master_version=self.published, title="المجال")

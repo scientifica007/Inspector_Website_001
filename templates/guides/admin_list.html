@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}الأدلة{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Admin · Guides</p>
+    <h1>الأدلة المقترحة</h1>
+    <p class="hint">الدليل توصية اختيارية مرتبطة بمرجع مشترك؛ لا يفرض نطاقًا ولا التزام إكمال.</p>
+  </div>
+  <a class="primary button-link" href="{% url 'guide_create' %}">+ دليل جديد</a>
+</section>
+
+<section class="card">
+  {% for guide in guides %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ guide.name }}</strong>
+        <small class="hint">{{ guide.reference.name }} · {{ guide.entries.count }} اقتراحًا</small>
+        {% if guide.description %}<small class="hint">{{ guide.description }}</small>{% endif %}
+      </div>
+      <a class="secondary button-link" href="{% url 'guide_detail' guide.pk %}">فتح الدليل</a>
+    </div>
+  {% empty %}
+    <div class="empty-state">
+      <p>لا توجد أدلة بعد.</p>
+      <a class="primary button-link" href="{% url 'guide_create' %}">إنشاء أول دليل</a>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}
