@@ -215,9 +215,21 @@ class Migration(migrations.Migration):
             model_name="assignmenteffect",
             constraint=models.CheckConstraint(
                 condition=(
-                    models.Q(("node__isnull", False), ("specification__isnull", True), ("item__isnull", True))
-                    | models.Q(("node__isnull", True), ("specification__isnull", False), ("item__isnull", True))
-                    | models.Q(("node__isnull", True), ("specification__isnull", True), ("item__isnull", False))
+                    models.Q(
+                        node__isnull=False,
+                        specification__isnull=True,
+                        item__isnull=True,
+                    )
+                    | models.Q(
+                        node__isnull=True,
+                        specification__isnull=False,
+                        item__isnull=True,
+                    )
+                    | models.Q(
+                        node__isnull=True,
+                        specification__isnull=True,
+                        item__isnull=False,
+                    )
                 ),
                 name="ck_assignment_effect_one_target",
             ),
