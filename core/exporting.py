@@ -1,4 +1,4 @@
-EXPORT_SCHEMA = "inspection-export-v2"
+EXPORT_SCHEMA = "inspection-export-v3"
 
 from .models import ProposalType, ScopeOrigin
 
@@ -127,9 +127,9 @@ def build_inspection_export(inspection):
                 "id": inspection.inspector_id,
                 "username": inspection.inspector.username,
             },
-            "master_version": {
+            "reference": {
                 "id": inspection.master_version_id,
-                "number": inspection.master_version.number,
+                "name": inspection.reference_name_snapshot,
             },
             "general_observations": inspection.general_observations,
             "general_recommendations": inspection.general_recommendations,

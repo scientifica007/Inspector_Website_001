@@ -2,13 +2,8 @@
 {% block title %}{% if is_admin_user %}الزيارات{% else %}زياراتي{% endif %}{% endblock %}
 {% block content %}
 <section class="page-head">
-  <div>
-    <p class="eyebrow"><a href="{% url 'dashboard' %}">الرئيسية</a></p>
-    <h1>{% if is_admin_user %}الزيارات{% else %}زياراتي{% endif %}</h1>
-  </div>
-  {% if not is_admin_user %}
-  <a class="primary button-link" href="{% url 'inspection_create' %}">+ زيارة جديدة</a>
-  {% endif %}
+  <div><p class="eyebrow"><a href="{% url 'dashboard' %}">الرئيسية</a></p><h1>{% if is_admin_user %}الزيارات{% else %}زياراتي{% endif %}</h1></div>
+  {% if not is_admin_user %}<a class="primary button-link" href="{% url 'inspection_create' %}">+ زيارة جديدة</a>{% endif %}
 </section>
 <section class="card">
   {% if inspections %}
@@ -17,14 +12,12 @@
       <a class="visit visit-link" href="{% url 'inspection_detail' inspection.pk %}">
         <div>
           <strong>{{ inspection.institution.name }}</strong>
-          <small>{{ inspection.visit_date }} · المرجع v{{ inspection.master_version.number }}</small>
+          <small>{{ inspection.visit_date }} · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</small>
         </div>
         <span class="badge">{{ inspection.get_status_display }}</span>
       </a>
     {% endfor %}
     </div>
-  {% else %}
-    <p>لا توجد زيارات بعد.</p>
-  {% endif %}
+  {% else %}<p>لا توجد زيارات بعد.</p>{% endif %}
 </section>
 {% endblock %}

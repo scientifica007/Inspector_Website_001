@@ -21,8 +21,19 @@
 - Editing content after an already-resolved proposal creates a new PENDING proposal without rewriting the historical decision.
 - Added Proposal status WITHDRAWN and migration 0005.
 
+### A-C3.1 — Independent Reference Library Core
+- Replaced the single-current-reference UX with a library of independent inspection references.
+- Added human reference names, SHARED/PRIVATE visibility and optional ownership metadata.
+- Admin can create multiple shared references without superseding earlier ones.
+- Admin can hard-delete references, nodes, descriptions and checklist items; visit snapshots remain intact.
+- New visits explicitly choose an available reference or start blank.
+- Inspection source reference is now nullable and stores a reference-name snapshot so source deletion does not delete the visit.
+- JSON export advances to `inspection-export-v3` and reports `reference` metadata instead of a version number.
+- Added migration `0006_reference_library_core` with legacy classification and visit-name snapshot backfill.
+- Legacy `number/status/published_at` fields remain temporarily as non-authoritative migration metadata and no longer drive builder or visit creation behavior.
+
 ### Changed
-- New visits start with an empty selective scope pinned to the current published Master.
+- New visits start with an empty selective scope and may choose an available reference explicitly.
 - The Master is treated as a reference library rather than a mandatory full-visit template.
 - Inspectors can add a full branch, a single specification, or a single checklist item.
 - Structural ancestors are materialized as CONTEXT only when needed.

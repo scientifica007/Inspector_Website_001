@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head">
   <div>
-    <p class="eyebrow">زيارة ميدانية · المرجع v{{ inspection.master_version.number }}</p>
+    <p class="eyebrow">زيارة ميدانية · {% if inspection.reference_name_snapshot %}{{ inspection.reference_name_snapshot }}{% else %}دون مرجع مصدر{% endif %}</p>
     <h1>{{ inspection.institution.name }}</h1>
     <p class="hint">{{ inspection.visit_date }} · {{ inspection.get_status_display }}</p>
   </div>

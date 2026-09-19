@@ -64,6 +64,7 @@ class Command(BaseCommand):
         )
         master = MasterVersion.objects.create(
             number=1,
+            name="مرجع تجريبي",
             status=MasterStatus.PUBLISHED,
             published_at=timezone.now(),
         )
@@ -145,6 +146,7 @@ class Command(BaseCommand):
             institution=institution,
             inspector=user,
             master_version=master,
+            reference_name_snapshot=master.name,
             visit_date=timezone.localdate(),
         )
         materialize_inspection(inspection)

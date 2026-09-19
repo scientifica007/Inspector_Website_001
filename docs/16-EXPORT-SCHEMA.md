@@ -1,30 +1,22 @@
-# INSPECTION EXPORT SCHEMA — v2
+# INSPECTION EXPORT SCHEMA — v3
 
 اسم المخطط:
 
-`inspection-export-v2`
+`inspection-export-v3`
 
 ## الهدف
 
-إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية الفعلية، بما في ذلك نطاق الزيارة وليس البيانات المعبأة فقط.
-
-يمكن:
-- أرشفتها؛
-- فحصها يدويًا؛
-- معالجتها برمجيًا؛
-- تمريرها لاحقًا إلى أدوات إعداد التقارير.
+إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية الفعلية، بما في ذلك نطاق الزيارة ومرجع المصدر التاريخي دون الاعتماد على بقاء المرجع في المكتبة.
 
 ## مصدر الحقيقة
 
-التصدير مبني على Inspection Snapshot المثبتة للزيارة، وليس على الصياغة الحالية للـMaster.
-
-تعديل Master لاحقًا لا يعيد تفسير الزيارة القديمة.
+التصدير مبني على Inspection Snapshot المثبتة للزيارة. تعديل المرجع المصدر أو حذفه لاحقًا لا يعيد تفسير الزيارة.
 
 ## المستوى الأعلى
 
 ```json
 {
-  "schema": "inspection-export-v2",
+  "schema": "inspection-export-v3",
   "inspection": {}
 }
 ```
@@ -34,14 +26,25 @@
 يتضمن:
 - `id`
 - `visit_date`
-- `status` — قد يكون PENDING / APPROVED / REJECTED / MERGED / WITHDRAWN
+- `status`: DRAFT | COMPLETED
 - `scope_mode`
 - `institution`
 - `inspector`
-- `master_version`
+- `reference`
 - `general_observations`
 - `general_recommendations`
 - `nodes`
+
+## reference
+
+```json
+{
+  "id": 12,
+  "name": "مرجع زيارة بيداغوجية"
+}
+```
+
+قد يكون `id` فارغًا إذا حُذف مرجع المصدر أو بدأت الزيارة دون مرجع، بينما يبقى `name` Snapshot للاسم عند إنشاء الزيارة إن كان هناك مصدر.
 
 ## scope_mode
 
@@ -50,107 +53,18 @@
 
 ## nodes
 
-قائمة Recursive. كل Node يتضمن:
-- `snapshot_id`
-- `source_stable_id` إن كان مصدره Master
-- `title`
-- `description`
-- `scope`
-- `specifications`
-- `checklist_items`
-- `additional_observations`
-- `recommendations`
-- `children`
-
-## scope على مستوى Node
-
-```json
-{
-  "origin": "MANUAL",
-  "state": "ACTIVE",
-  "locked": false,
-  "role": "SELECTED"
-}
-```
-
-القيم الممكنة لـ `origin`:
-- LEGACY
-- MANUAL
-- GUIDE
-- ASSIGNMENT
-- LOCAL
-
-القيم الممكنة لـ `state`:
-- ACTIVE
-- EXCLUDED
-
-القيم الممكنة لـ `role`:
-- SELECTED
-- CONTEXT
-
-## specifications
-
-كل مواصفة تتضمن Snapshot التعريف التاريخي، القيمة، و:
-
-```json
-{
-  "scope": {
-    "origin": "MANUAL",
-    "state": "ACTIVE",
-    "locked": false,
-    "completion_required": false
-  }
-}
-```
-
-المواصفة EXCLUDED تبقى في التصدير إذا كانت Snapshot موجودة، لأن الإخراج من النطاق لا يمحو الحقيقة التاريخية أو القيمة السابقة.
-
-## checklist_items
-
-كل بند يتضمن:
-- Snapshot ID
-- Stable ID للمصدر إن وجد
-- العنوان التاريخي
-- Guidance التاريخي
-- الحالة
-- المعاينة/الملاحظة
-- Scope metadata
-
-بنفس منطق المواصفات، يبقى العنصر EXCLUDED قابلًا للتتبع بدل حذفه.
+قائمة Recursive. كل Node يتضمن Snapshot ID، Stable ID للمصدر إن بقي موجودًا، العنوان والوصف وScope metadata والأوصاف والبنود والمعاينات والتوصيات والأبناء.
 
 ## Local content وProposal trace
 
-لا يوجد في v2 حقل `local_addition` منفصل.
+`scope.origin = "LOCAL"` يحدد المحتوى المحلي. في البيانات التاريخية التي لها Proposal قد يظهر أثر Proposal المرتبط بها. A-C3.2 يعيد تصميم التعميم ليصبح اختياريًا على مستوى المرجع الخاص بدل الإرسال التلقائي لكل عنصر.
 
-المعلومة الصحيحة هي:
+## الحذف
 
-`scope.origin = "LOCAL"`
+حذف المرجع أو تعريفاته من المكتبة لا يحذف Snapshot الموجودة داخل الزيارة. عند حذف المصدر قد تصبح `source_stable_id` فارغة، لكن العنوان والبيانات التشغيلية التاريخية تبقى في Snapshot.
 
-وعند وجود Proposal مرتبط بالإضافة المحلية يضاف أثر محدود:
-- `proposal_id`
-- `status`
-- `resolution_data`
+## الترتيب وEncoding
 
-## لماذا يتضمن Export العناصر EXCLUDED؟
+Nodes والأوصاف والبنود تخرج حسب ترتيب Snapshot ثم ID كفاصل ثابت. لا يوجد `exported_at` للمحافظة على Determinism.
 
-لأن Soft Exclusion قرار نطاق، وليس حذفًا للبيانات.
-
-وجود العنصر في الملف مع `state = EXCLUDED` يحافظ على:
-- البيانات التي سبق إدخالها؛
-- أثر تغيير النطاق؛
-- إمكانية التفسير اللاحق دون الخلط بين «لم يوجد أصلًا» و«كان موجودًا ثم أُخرج».
-
-## الترتيب
-
-Nodes والمواصفات والبنود تخرج حسب ترتيب Snapshot ثم ID كفاصل ثابت.
-
-لا يوجد `exported_at` حتى يبقى الناتج Deterministic لنفس حالة قاعدة البيانات.
-
-## Encoding
-
-الاستجابة:
-- JSON
-- UTF-8
-- `ensure_ascii=false`
-
-ولا تُصدّر كلمات المرور أو Sessions أو Tokens أو أسرار الاتصال.
+الاستجابة JSON UTF-8 مع `ensure_ascii=false`، ولا تتضمن كلمات مرور أو Sessions أو Tokens أو أسرار اتصال.

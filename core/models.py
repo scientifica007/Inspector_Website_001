@@ -19,9 +19,16 @@ class ResultStatus(models.TextChoices):
     NON_COMPLIANT = "NON_COMPLIANT", "غير مطابق"
 
 class MasterStatus(models.TextChoices):
-    DRAFT = "DRAFT", "مسودة"
-    PUBLISHED = "PUBLISHED", "منشور"
-    ARCHIVED = "ARCHIVED", "مؤرشف"
+    # Legacy metadata retained during A-C3 migration. New behavior must not
+    # use this field to choose or supersede inspection references.
+    DRAFT = "DRAFT", "مسودة قديمة"
+    PUBLISHED = "PUBLISHED", "منشور قديم"
+    ARCHIVED = "ARCHIVED", "مؤرشف قديم"
+
+
+class ReferenceVisibility(models.TextChoices):
+    SHARED = "SHARED", "مشترك"
+    PRIVATE = "PRIVATE", "خاص"
 
 class ProposalStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
@@ -102,13 +109,35 @@ class Institution(models.Model):
         return self.name
 
 class MasterVersion(models.Model):
+    """
+    Internal legacy class name retained during A-C3 to keep the database
+    migration conservative. Product semantics are now an independent
+    inspection reference, not a superseding version.
+    """
+
     number = models.PositiveIntegerField(unique=True)
+    name = models.CharField(max_length=255)
+    visibility = models.CharField(
+        max_length=16,
+        choices=ReferenceVisibility.choices,
+        default=ReferenceVisibility.SHARED,
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="inspection_references",
+    )
     status = models.CharField(max_length=16, choices=MasterStatus.choices, default=MasterStatus.DRAFT)
     created_at = models.DateTimeField(auto_now_add=True)
     published_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        ordering = ["name", "id"]
+
     def __str__(self):
-        return f"v{self.number} — {self.status}"
+        return self.name
 
 class StructureNode(models.Model):
     stable_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
@@ -148,7 +177,14 @@ class ChecklistItem(models.Model):
 class Inspection(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.PROTECT, related_name="inspections")
     inspector = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="inspections")
-    master_version = models.ForeignKey(MasterVersion, on_delete=models.PROTECT, related_name="inspections")
+    master_version = models.ForeignKey(
+        MasterVersion,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="inspections",
+    )
+    reference_name_snapshot = models.CharField(max_length=255, blank=True)
     visit_date = models.DateField()
     status = models.CharField(max_length=16, choices=InspectionStatus.choices, default=InspectionStatus.DRAFT)
     scope_mode = models.CharField(

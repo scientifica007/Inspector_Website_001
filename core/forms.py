@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Institution, Inspection
+from .models import Institution, Inspection, MasterVersion
 
 class InstitutionForm(forms.ModelForm):
     class Meta:
@@ -23,13 +23,22 @@ class InstitutionForm(forms.ModelForm):
         return name
 
 class InspectionCreateForm(forms.ModelForm):
+    reference = forms.ModelChoiceField(
+        label="مرجع الزيارة",
+        queryset=MasterVersion.objects.none(),
+        required=False,
+        empty_label="بدء زيارة فارغة دون مرجع",
+    )
+
     class Meta:
         model = Inspection
         fields = ["institution", "visit_date"]
         labels = {"institution": "المؤسسة", "visit_date": "تاريخ الزيارة"}
         widgets = {"visit_date": forms.DateInput(attrs={"type": "date"})}
 
-    def __init__(self, *args, institutions=None, **kwargs):
+    def __init__(self, *args, institutions=None, references=None, **kwargs):
         super().__init__(*args, **kwargs)
         if institutions is not None:
             self.fields["institution"].queryset = institutions
+        if references is not None:
+            self.fields["reference"].queryset = references

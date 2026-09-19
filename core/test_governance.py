@@ -8,7 +8,6 @@ from django.urls import reverse
 from .governance import (
     approve_proposal,
     merge_institution_proposal,
-    publish_draft,
     reject_proposal,
 )
 from .models import (
@@ -29,7 +28,6 @@ from .models import (
 )
 from .services import (
     create_draft_from_latest_published,
-    latest_published,
     materialize_inspection,
 )
 
@@ -161,13 +159,10 @@ class Gate5GovernanceTests(TestCase):
             self.snap_root.item_results.filter(title_snapshot="لا يجب إضافته").exists()
         )
 
-    def test_inspector_cannot_access_proposal_inbox_or_publish(self):
-        draft, _ = create_draft_from_latest_published()
+    def test_inspector_cannot_access_admin_governance_or_reference_builder(self):
         self.login_inspector()
         self.assertEqual(self.client.get(reverse("proposal_list")).status_code, 403)
-        self.assertEqual(self.client.get(reverse("builder_publish")).status_code, 403)
-        draft.refresh_from_db()
-        self.assertEqual(draft.status, MasterStatus.DRAFT)
+        self.assertEqual(self.client.get(reverse("builder_home")).status_code, 403)
 
     def test_admin_can_edit_payload_then_approve_local_item_into_draft_only(self):
         self.login_inspector()
@@ -388,41 +383,4 @@ class Gate5GovernanceTests(TestCase):
         self.assertFalse(local.active)
         self.assertEqual(visit.institution_id, local.id)
 
-    def test_publish_archives_previous_and_does_not_rewrite_old_visit(self):
-        snapshot_title = self.snap_root.title_snapshot
-        draft, _ = create_draft_from_latest_published()
-        StructureNode.objects.create(
-            master_version=draft,
-            title="عنصر جديد",
-            sort_order=99,
-        )
-        published = publish_draft(draft)
 
-        self.published.refresh_from_db()
-        self.inspection.refresh_from_db()
-        self.snap_root.refresh_from_db()
-        self.assertEqual(self.published.status, MasterStatus.ARCHIVED)
-        self.assertEqual(published.status, MasterStatus.PUBLISHED)
-        self.assertEqual(latest_published(), published)
-        self.assertEqual(
-            MasterVersion.objects.filter(status=MasterStatus.PUBLISHED).count(),
-            1,
-        )
-        self.assertEqual(self.inspection.master_version_id, self.published.id)
-        self.assertEqual(self.snap_root.title_snapshot, snapshot_title)
-
-    def test_publish_route_requires_explicit_confirmation(self):
-        draft, _ = create_draft_from_latest_published()
-        self.login_admin()
-        response = self.client.post(reverse("builder_publish"), {})
-        self.assertEqual(response.status_code, 200)
-        draft.refresh_from_db()
-        self.assertEqual(draft.status, MasterStatus.DRAFT)
-
-        response = self.client.post(
-            reverse("builder_publish"),
-            {"confirm": "on"},
-        )
-        self.assertRedirects(response, reverse("builder_home"))
-        draft.refresh_from_db()
-        self.assertEqual(draft.status, MasterStatus.PUBLISHED)

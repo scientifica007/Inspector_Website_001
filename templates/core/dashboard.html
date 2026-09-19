@@ -14,6 +14,10 @@
     <strong>{% if is_admin_user %}الزيارات{% else %}زياراتي{% endif %}</strong>
     <span>{{ inspection_count }} زيارة متاحة</span>
   </a>
+  <a class="card workspace-card" href="{% url 'reference_list' %}">
+    <strong>المراجع</strong>
+    <span>{{ reference_count }} مرجعًا متاحًا</span>
+  </a>
   <a class="card workspace-card" href="{% url 'institution_list' %}">
     <strong>المؤسسات</strong>
     <span>{{ institution_count }} مؤسسة متاحة</span>
@@ -26,8 +30,8 @@
   {% endif %}
   {% if admin_access %}
   <a class="card workspace-card" href="{% url 'builder_home' %}">
-    <strong>هندسة المرجع</strong>
-    <span>إدارة المرجع المنشور والمسودات.</span>
+    <strong>إدارة المراجع</strong>
+    <span>إنشاء مراجع مستقلة وتعديلها أو حذفها.</span>
   </a>
   <a class="card workspace-card" href="{% url 'proposal_list' %}">
     <strong>الاقتراحات</strong>

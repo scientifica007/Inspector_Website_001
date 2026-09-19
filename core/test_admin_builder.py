@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -6,14 +8,19 @@ from .builder_forms import SpecificationDefinitionForm, StructureNodeForm
 from .models import (
     ChecklistItem,
     FieldType,
+    Inspection,
+    InspectionNode,
+    Institution,
     MasterStatus,
     MasterVersion,
+    ReferenceVisibility,
     SpecificationDefinition,
     StructureNode,
 )
-from .services import create_draft_from_latest_published, flatten_nodes
+from .services import flatten_nodes
 
 User = get_user_model()
+
 
 class AdminBuilderTests(TestCase):
     def setUp(self):
@@ -23,57 +30,62 @@ class AdminBuilderTests(TestCase):
         self.inspector = User.objects.create_user(
             "inspector-builder", password="test-pass-123"
         )
+        self.institution = Institution.objects.create(name="مؤسسة مرجعية")
 
     def login_admin(self):
         self.client.login(username="admin-builder", password="test-pass-123")
 
+    def make_reference(self, number, name):
+        return MasterVersion.objects.create(
+            number=number,
+            name=name,
+            visibility=ReferenceVisibility.SHARED,
+            status=MasterStatus.PUBLISHED,
+        )
+
     def test_builder_is_admin_only(self):
         self.client.login(username="inspector-builder", password="test-pass-123")
-        response = self.client.get(reverse("builder_home"))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.client.get(reverse("builder_home")).status_code, 403)
 
-    def test_admin_can_open_builder(self):
+    def test_admin_builder_is_reference_library(self):
+        first = self.make_reference(1, "مرجع بيداغوجي")
+        second = self.make_reference(2, "مرجع التجهيزات")
         self.login_admin()
         response = self.client.get(reverse("builder_home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "هندسة مرجع التفتيش")
+        self.assertContains(response, "مراجع التفتيش")
+        self.assertContains(response, first.name)
+        self.assertContains(response, second.name)
+        self.assertNotContains(response, "المسودة الحالية")
 
-    def test_draft_clone_preserves_tree_specs_and_items(self):
-        published = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
-        root = StructureNode.objects.create(
-            master_version=published, title="المجال", sort_order=1
-        )
-        child = StructureNode.objects.create(
-            master_version=published, parent=root, title="المصلحة", sort_order=2
-        )
-        SpecificationDefinition.objects.create(
-            node=root,
-            title="عدد الموظفين",
-            field_type=FieldType.NUMBER,
-            required=True,
-            sort_order=1,
-        )
-        ChecklistItem.objects.create(
-            node=child, title="توفر برنامج عمل", guidance="تحقق من الوثيقة", sort_order=1
-        )
+    def test_admin_can_create_multiple_shared_references_without_superseding(self):
+        self.login_admin()
+        for name in ("مرجع أول", "مرجع ثان"):
+            response = self.client.post(
+                reverse("builder_reference_create"),
+                {"name": name},
+            )
+            reference = MasterVersion.objects.get(name=name)
+            self.assertRedirects(
+                response,
+                reverse("builder_reference", args=[reference.pk]),
+            )
+            self.assertEqual(reference.visibility, ReferenceVisibility.SHARED)
 
-        draft, created = create_draft_from_latest_published()
-        self.assertTrue(created)
-        self.assertEqual(draft.number, 2)
-        cloned_root = draft.nodes.get(title="المجال")
-        cloned_child = draft.nodes.get(title="المصلحة")
-        self.assertEqual(cloned_child.parent, cloned_root)
-        self.assertTrue(cloned_root.specifications.get().required)
-        self.assertEqual(cloned_child.items.get().guidance, "تحقق من الوثيقة")
+        self.assertEqual(
+            MasterVersion.objects.filter(visibility=ReferenceVisibility.SHARED).count(),
+            2,
+        )
+        self.assertTrue(MasterVersion.objects.filter(name="مرجع أول").exists())
+        self.assertTrue(MasterVersion.objects.filter(name="مرجع ثان").exists())
 
-        same, created_again = create_draft_from_latest_published()
-        self.assertFalse(created_again)
-        self.assertEqual(same, draft)
-
-    def test_node_form_blocks_cross_version_parent(self):
-        draft = MasterVersion.objects.create(number=2, status=MasterStatus.DRAFT)
-        other = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
-        foreign_parent = StructureNode.objects.create(master_version=other, title="خارج المسودة")
+    def test_node_form_blocks_cross_reference_parent(self):
+        reference = self.make_reference(1, "المرجع أ")
+        other = self.make_reference(2, "المرجع ب")
+        foreign_parent = StructureNode.objects.create(
+            master_version=other,
+            title="خارج المرجع",
+        )
         form = StructureNodeForm(
             data={
                 "title": "عنصر",
@@ -83,15 +95,19 @@ class AdminBuilderTests(TestCase):
                 "sort_order": 0,
                 "active": "on",
             },
-            draft=draft,
+            reference=reference,
         )
         self.assertFalse(form.is_valid())
         self.assertIn("parent", form.errors)
 
     def test_node_form_blocks_recursive_cycle(self):
-        draft = MasterVersion.objects.create(number=1, status=MasterStatus.DRAFT)
-        root = StructureNode.objects.create(master_version=draft, title="جذر")
-        child = StructureNode.objects.create(master_version=draft, parent=root, title="فرع")
+        reference = self.make_reference(1, "مرجع")
+        root = StructureNode.objects.create(master_version=reference, title="جذر")
+        child = StructureNode.objects.create(
+            master_version=reference,
+            parent=root,
+            title="فرع",
+        )
         form = StructureNodeForm(
             data={
                 "title": root.title,
@@ -102,17 +118,20 @@ class AdminBuilderTests(TestCase):
                 "active": "on",
             },
             instance=root,
-            draft=draft,
+            reference=reference,
         )
         self.assertFalse(form.is_valid())
         self.assertIn("parent", form.errors)
 
-    def test_admin_can_create_child_node(self):
-        draft = MasterVersion.objects.create(number=1, status=MasterStatus.DRAFT)
-        parent = StructureNode.objects.create(master_version=draft, title="مديرية فرعية")
+    def test_admin_can_create_child_node_in_selected_reference(self):
+        reference = self.make_reference(1, "مرجع التنظيم")
+        parent = StructureNode.objects.create(
+            master_version=reference,
+            title="مديرية فرعية",
+        )
         self.login_admin()
         response = self.client.post(
-            reverse("builder_node_create"),
+            reverse("builder_node_create", args=[reference.pk]),
             {
                 "title": "مصلحة الدراسات",
                 "description": "",
@@ -125,11 +144,11 @@ class AdminBuilderTests(TestCase):
         child = StructureNode.objects.get(title="مصلحة الدراسات")
         self.assertRedirects(response, reverse("builder_node", args=[child.pk]))
         self.assertEqual(child.parent, parent)
-        self.assertEqual(child.master_version, draft)
+        self.assertEqual(child.master_version, reference)
 
-    def test_select_specification_requires_options_and_parses_lines(self):
-        draft = MasterVersion.objects.create(number=1, status=MasterStatus.DRAFT)
-        node = StructureNode.objects.create(master_version=draft, title="مجال")
+    def test_select_description_requires_options_and_parses_lines(self):
+        reference = self.make_reference(1, "مرجع")
+        node = StructureNode.objects.create(master_version=reference, title="مجال")
         invalid = SpecificationDefinitionForm(
             data={
                 "title": "نوع المقر",
@@ -160,32 +179,92 @@ class AdminBuilderTests(TestCase):
         spec = valid.save()
         self.assertEqual(spec.options, ["ملكية", "إيجار", "ملحقة"])
 
-    def test_published_node_cannot_be_edited_through_builder(self):
-        published = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
-        node = StructureNode.objects.create(master_version=published, title="منشور")
+    def test_any_admin_reference_can_be_edited_directly(self):
+        reference = self.make_reference(1, "مرجع مشترك")
+        node = StructureNode.objects.create(
+            master_version=reference,
+            title="قبل التعديل",
+        )
         self.login_admin()
-        response = self.client.get(reverse("builder_node_edit", args=[node.pk]))
-        self.assertEqual(response.status_code, 404)
+        response = self.client.post(
+            reverse("builder_node_edit", args=[node.pk]),
+            {
+                "title": "بعد التعديل",
+                "description": "",
+                "inspectable": "on",
+                "parent": "",
+                "sort_order": 0,
+                "active": "on",
+            },
+        )
+        self.assertRedirects(response, reverse("builder_node", args=[node.pk]))
+        node.refresh_from_db()
+        self.assertEqual(node.title, "بعد التعديل")
+
+    def test_admin_can_hard_delete_reference_content_without_deleting_visit_snapshot(self):
+        reference = self.make_reference(1, "مرجع قابل للحذف")
+        node = StructureNode.objects.create(
+            master_version=reference,
+            title="عنصر مصدر",
+        )
+        inspection = Inspection.objects.create(
+            institution=self.institution,
+            inspector=self.inspector,
+            master_version=reference,
+            reference_name_snapshot=reference.name,
+            visit_date=date(2026, 9, 19),
+        )
+        snapshot = InspectionNode.objects.create(
+            inspection=inspection,
+            source_node=node,
+            title_snapshot="عنصر مصدر",
+        )
+
+        self.login_admin()
+        self.client.post(reverse("builder_node_delete", args=[node.pk]))
+
+        snapshot.refresh_from_db()
+        self.assertIsNone(snapshot.source_node_id)
+        self.assertEqual(snapshot.title_snapshot, "عنصر مصدر")
+        self.assertTrue(Inspection.objects.filter(pk=inspection.pk).exists())
+
+    def test_admin_can_delete_reference_without_deleting_inspection(self):
+        reference = self.make_reference(1, "مرجع سيحذف")
+        inspection = Inspection.objects.create(
+            institution=self.institution,
+            inspector=self.inspector,
+            master_version=reference,
+            reference_name_snapshot=reference.name,
+            visit_date=date(2026, 9, 19),
+        )
+
+        self.login_admin()
+        response = self.client.post(
+            reverse("builder_reference_delete", args=[reference.pk])
+        )
+        self.assertRedirects(response, reverse("builder_home"))
+
+        inspection.refresh_from_db()
+        self.assertIsNone(inspection.master_version_id)
+        self.assertEqual(inspection.reference_name_snapshot, "مرجع سيحذف")
 
     def test_inactive_branch_is_hidden_from_preview_tree(self):
-        draft = MasterVersion.objects.create(number=1, status=MasterStatus.DRAFT)
+        reference = self.make_reference(1, "مرجع")
         hidden = StructureNode.objects.create(
-            master_version=draft, title="فرع معطل", active=False
+            master_version=reference,
+            title="فرع معطل",
+            active=False,
         )
         StructureNode.objects.create(
-            master_version=draft, parent=hidden, title="ابن نشط", active=True
+            master_version=reference,
+            parent=hidden,
+            title="ابن نشط",
+            active=True,
         )
         StructureNode.objects.create(
-            master_version=draft, title="فرع ظاهر", active=True
+            master_version=reference,
+            title="فرع ظاهر",
+            active=True,
         )
-        titles = [node.title for node, _ in flatten_nodes(draft, active_only=True)]
+        titles = [node.title for node, _ in flatten_nodes(reference, active_only=True)]
         self.assertEqual(titles, ["فرع ظاهر"])
-
-    def test_preview_does_not_publish_or_mutate_draft(self):
-        draft = MasterVersion.objects.create(number=1, status=MasterStatus.DRAFT)
-        StructureNode.objects.create(master_version=draft, title="التجهيزات")
-        self.login_admin()
-        response = self.client.get(reverse("builder_preview"))
-        self.assertEqual(response.status_code, 200)
-        draft.refresh_from_db()
-        self.assertEqual(draft.status, MasterStatus.DRAFT)

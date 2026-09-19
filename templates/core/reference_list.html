@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}المراجع{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow"><a href="{% url 'dashboard' %}">الرئيسية</a></p>
+    <h1>مراجع التفتيش</h1>
+    <p class="hint">المراجع المتاحة لك. المرجع المشترك لا يلغي غيره.</p>
+  </div>
+  {% if is_admin_user %}
+    <a class="primary button-link" href="{% url 'builder_home' %}">إدارة المراجع</a>
+  {% endif %}
+</section>
+
+<section class="card">
+  {% if references %}
+    <div class="prepare-list">
+      {% for reference in references %}
+      <div class="prepare-list-row">
+        <div>
+          <strong>{{ reference.name }}</strong>
+          <div class="prepare-node-meta">
+            <span class="badge">{{ reference.get_visibility_display }}</span>
+            {% if reference.visibility == "PRIVATE" and reference.owner %}
+              <span class="hint">خاص بـ {{ reference.owner.username }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>لا توجد مراجع متاحة حاليًا.</p>
+  {% endif %}
+</section>
+{% endblock %}

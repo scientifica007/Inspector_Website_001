@@ -1,23 +1,29 @@
 {% extends "base.html" %}
 {% block title %}زيارة جديدة{% endblock %}
 {% block content %}
-<section class="page-head"><div><p class="eyebrow">الزيارات</p><h1>زيارة جديدة</h1></div></section>
+<section class="page-head">
+  <div>
+    <p class="eyebrow">الزيارات</p>
+    <h1>زيارة جديدة</h1>
+    <p class="hint">اختر مرجعًا من المكتبة أو ابدأ مسودة فارغة.</p>
+  </div>
+</section>
 <section class="card narrow-form">
-  {% if master_missing %}
-    <p class="error">لا توجد نسخة منشورة من مرجع التفتيش. يجب على Admin نشر نسخة قبل إنشاء زيارة.</p>
-  {% else %}
-    <p class="hint">ستُربط الزيارة بالمرجع المنشور v{{ master.number }} كمصدر للاختيار. لن يفرض النظام محتوى المرجع كاملًا؛ تحدد نطاق الزيارة بعد إنشاء المسودة.</p>
-    <form method="post" class="stack-form">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      {% for field in form %}
-        <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
-      {% endfor %}
-      <div class="actions">
-        <button class="primary" type="submit">إنشاء المسودة</button>
-        <a class="secondary button-link" href="{% url 'dashboard' %}">إلغاء</a>
-      </div>
-    </form>
-  {% endif %}
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% if field.name == "reference" %}<small class="hint">اختيار المرجع لا يمنعك من تعديل نطاق الزيارة أو إضافة محتوى محلي.</small>{% endif %}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+    <div class="actions">
+      <button class="primary" type="submit">إنشاء المسودة</button>
+      <a class="secondary button-link" href="{% url 'dashboard' %}">إلغاء</a>
+    </div>
+  </form>
 </section>
 {% endblock %}

@@ -39,7 +39,11 @@ class ExportTests(TestCase):
             institution_type="CFPA",
             commune="تبسة",
         )
-        self.master = MasterVersion.objects.create(number=1, status=MasterStatus.PUBLISHED)
+        self.master = MasterVersion.objects.create(
+            number=1,
+            name="مرجع التصدير",
+            status=MasterStatus.PUBLISHED,
+        )
         self.root = StructureNode.objects.create(
             master_version=self.master,
             title="المجال الأول",
@@ -68,6 +72,7 @@ class ExportTests(TestCase):
             institution=self.institution,
             inspector=self.inspector,
             master_version=self.master,
+            reference_name_snapshot=self.master.name,
             visit_date=date(2026, 9, 18),
             general_observations="معاينة عامة",
             general_recommendations="توصية عامة",
@@ -86,11 +91,12 @@ class ExportTests(TestCase):
         first = build_inspection_export(self.inspection)
         second = build_inspection_export(self.inspection)
         self.assertEqual(first, second)
-        self.assertEqual(first["schema"], "inspection-export-v2")
+        self.assertEqual(first["schema"], "inspection-export-v3")
         payload = first["inspection"]
         self.assertEqual(payload["institution"]["name"], "مؤسسة تجريبية عربية")
         self.assertEqual(payload["inspector"]["username"], "export-inspector")
-        self.assertEqual(payload["master_version"]["number"], 1)
+        self.assertEqual(payload["reference"]["id"], self.master.id)
+        self.assertEqual(payload["reference"]["name"], "مرجع التصدير")
         self.assertEqual(payload["scope_mode"], "SELECTIVE")
         self.assertEqual(payload["nodes"][0]["title"], "المجال الأول")
         self.assertEqual(payload["nodes"][0]["children"][0]["title"], "تحت المجال")

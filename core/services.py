@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db import models
 from django.db.models import Max
 
 from .models import (
@@ -11,6 +12,8 @@ from .models import (
     InspectionScopeMode,
     MasterStatus,
     MasterVersion,
+    ReferenceVisibility,
+    Role,
     ScopeOrigin,
     ScopeRole,
     ScopeState,
@@ -18,6 +21,35 @@ from .models import (
     SpecificationValue,
     StructureNode,
 )
+
+def visible_references(user):
+    references = MasterVersion.objects.all()
+    if user.is_superuser or getattr(getattr(user, "profile", None), "role", None) == Role.ADMIN:
+        return references
+    return references.filter(
+        models.Q(visibility=ReferenceVisibility.SHARED)
+        | models.Q(visibility=ReferenceVisibility.PRIVATE, owner=user)
+    )
+
+
+def next_reference_number():
+    return (MasterVersion.objects.aggregate(value=Max("number"))["value"] or 0) + 1
+
+
+@transaction.atomic
+def create_reference(*, name, owner=None, visibility=ReferenceVisibility.SHARED):
+    return MasterVersion.objects.create(
+        number=next_reference_number(),
+        name=name.strip(),
+        visibility=visibility,
+        owner=owner,
+        status=(
+            MasterStatus.PUBLISHED
+            if visibility == ReferenceVisibility.SHARED
+            else MasterStatus.DRAFT
+        ),
+    )
+
 
 def latest_draft():
     return MasterVersion.objects.filter(status=MasterStatus.DRAFT).order_by("-number").first()
@@ -154,6 +186,8 @@ def materialize_inspection(inspection):
     """
     if inspection.inspection_nodes.exists():
         return False
+    if inspection.master_version_id is None:
+        return False
 
     origin = _scope_origin_for_full_materialization(inspection)
 
@@ -226,6 +260,8 @@ def _source_chain(source_node):
     return chain
 
 def _validate_source_node(inspection, source_node):
+    if inspection.master_version_id is None:
+        raise ValidationError("هذه الزيارة بدأت دون مرجع مصدر.")
     if source_node.master_version_id != inspection.master_version_id:
         raise ValidationError("العنصر لا ينتمي إلى إصدار المرجع المثبت لهذه الزيارة.")
     _source_chain(source_node)
@@ -579,6 +615,9 @@ def incomplete_required_scope_count(inspection):
     return missing
 
 def scope_reference_rows(inspection):
+    if inspection.master_version_id is None:
+        return []
+
     node_snapshots = {
         snapshot.source_node_id: snapshot
         for snapshot in inspection.inspection_nodes.exclude(source_node=None)

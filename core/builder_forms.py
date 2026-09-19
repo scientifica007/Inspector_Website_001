@@ -4,11 +4,29 @@ from django.core.exceptions import ValidationError
 from .models import (
     ChecklistItem,
     FieldType,
-    MasterStatus,
+    MasterVersion,
+    ReferenceVisibility,
     SpecificationDefinition,
     StructureNode,
 )
 from .services import descendant_ids
+
+
+class ReferenceForm(forms.ModelForm):
+    class Meta:
+        model = MasterVersion
+        fields = ["name"]
+        labels = {"name": "اسم المرجع"}
+
+    def save(self, commit=True):
+        reference = super().save(commit=False)
+        if reference.pk is None:
+            reference.visibility = ReferenceVisibility.SHARED
+            reference.owner = None
+        if commit:
+            reference.save()
+        return reference
+
 
 class StructureNodeForm(forms.ModelForm):
     class Meta:
@@ -24,12 +42,10 @@ class StructureNodeForm(forms.ModelForm):
         }
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
-    def __init__(self, *args, draft, **kwargs):
+    def __init__(self, *args, reference, **kwargs):
         super().__init__(*args, **kwargs)
-        self.draft = draft
-        if draft.status != MasterStatus.DRAFT:
-            raise ValueError("يمكن تحرير النسخ المسودة فقط.")
-        queryset = StructureNode.objects.filter(master_version=draft).order_by("sort_order", "id")
+        self.reference = reference
+        queryset = StructureNode.objects.filter(master_version=reference).order_by("sort_order", "id")
         if self.instance.pk:
             blocked = descendant_ids(self.instance) | {self.instance.pk}
             queryset = queryset.exclude(pk__in=blocked)
@@ -38,8 +54,8 @@ class StructureNodeForm(forms.ModelForm):
 
     def clean_parent(self):
         parent = self.cleaned_data.get("parent")
-        if parent and parent.master_version_id != self.draft.id:
-            raise ValidationError("يجب أن يكون العنصر الأب ضمن المسودة نفسها.")
+        if parent and parent.master_version_id != self.reference.id:
+            raise ValidationError("يجب أن يكون العنصر الأب ضمن المرجع نفسه.")
         if self.instance.pk and parent:
             if parent.pk == self.instance.pk or parent.pk in descendant_ids(self.instance):
                 raise ValidationError("لا يمكن إنشاء دورة داخل الشجرة.")
@@ -47,10 +63,11 @@ class StructureNodeForm(forms.ModelForm):
 
     def save(self, commit=True):
         node = super().save(commit=False)
-        node.master_version = self.draft
+        node.master_version = self.reference
         if commit:
             node.save()
         return node
+
 
 class SpecificationDefinitionForm(forms.ModelForm):
     options_text = forms.CharField(
@@ -64,20 +81,18 @@ class SpecificationDefinitionForm(forms.ModelForm):
         model = SpecificationDefinition
         fields = ["title", "field_type", "required", "help_text", "sort_order", "active"]
         labels = {
-            "title": "عنوان المواصفة",
+            "title": "عنوان الوصف",
             "field_type": "نوع القيمة",
             "required": "إلزامية",
             "help_text": "شرح/مساعدة",
             "sort_order": "الترتيب",
-            "active": "نشطة",
+            "active": "نشط",
         }
         widgets = {"help_text": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, node, **kwargs):
         super().__init__(*args, **kwargs)
         self.node = node
-        if node.master_version.status != MasterStatus.DRAFT:
-            raise ValueError("يمكن تحرير النسخ المسودة فقط.")
         if self.instance.pk:
             self.fields["options_text"].initial = "\n".join(self.instance.options or [])
 
@@ -99,6 +114,7 @@ class SpecificationDefinitionForm(forms.ModelForm):
             spec.save()
         return spec
 
+
 class ChecklistItemForm(forms.ModelForm):
     class Meta:
         model = ChecklistItem
@@ -114,8 +130,6 @@ class ChecklistItemForm(forms.ModelForm):
     def __init__(self, *args, node, **kwargs):
         super().__init__(*args, **kwargs)
         self.node = node
-        if node.master_version.status != MasterStatus.DRAFT:
-            raise ValueError("يمكن تحرير النسخ المسودة فقط.")
 
     def save(self, commit=True):
         item = super().save(commit=False)

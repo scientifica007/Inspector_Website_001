@@ -20,7 +20,6 @@ from .models import (
     InspectionStatus,
     Institution,
     InstitutionVerificationStatus,
-    MasterStatus,
     MasterVersion,
     Proposal,
     ProposalType,
@@ -43,6 +42,7 @@ from .services import (
     flatten_inspection_nodes,
     incomplete_required_scope_count,
     scope_reference_rows,
+    visible_references,
 )
 
 def health(request):
@@ -117,6 +117,7 @@ def dashboard(request):
         {
             "inspection_count": inspections.count(),
             "institution_count": visible_institutions(request.user).count(),
+            "reference_count": visible_references(request.user).count(),
             "is_admin_user": is_admin(request.user),
         },
     )
@@ -129,6 +130,18 @@ def inspection_list(request):
         "core/inspection_list.html",
         {
             "inspections": _visible_inspections(request.user),
+            "is_admin_user": is_admin(request.user),
+        },
+    )
+
+
+@login_required
+def reference_list(request):
+    return render(
+        request,
+        "core/reference_list.html",
+        {
+            "references": visible_references(request.user).select_related("owner"),
             "is_admin_user": is_admin(request.user),
         },
     )
@@ -179,33 +192,37 @@ def institution_create(request):
 
 @login_required
 def inspection_create(request):
-    master = MasterVersion.objects.filter(status=MasterStatus.PUBLISHED).order_by("-number").first()
     institutions = visible_institutions(request.user)
-    if master is None:
-        return render(
-            request,
-            "core/inspection_form.html",
-            {"form": None, "master_missing": True},
-            status=409 if request.method == "POST" else 200,
-        )
-
-    form = InspectionCreateForm(request.POST or None, institutions=institutions)
+    references = visible_references(request.user)
+    form = InspectionCreateForm(
+        request.POST or None,
+        institutions=institutions,
+        references=references,
+    )
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             inspection = form.save(commit=False)
             inspection.inspector = request.user
-            inspection.master_version = master
+            reference = form.cleaned_data["reference"]
+            inspection.master_version = reference
+            inspection.reference_name_snapshot = reference.name if reference else ""
             inspection.save()
-        messages.success(
-            request,
-            "أنشئت مسودة الزيارة وربطت بالمرجع المنشور. حدّد نطاق الزيارة حسب الحاجة.",
-        )
+        if reference:
+            messages.success(
+                request,
+                f"أنشئت مسودة الزيارة وربطت بالمرجع «{reference.name}» كمصدر للاختيار.",
+            )
+        else:
+            messages.success(
+                request,
+                "أنشئت مسودة زيارة فارغة دون مرجع مصدر.",
+            )
         return redirect("inspection_detail", pk=inspection.pk)
 
     return render(
         request,
         "core/inspection_form.html",
-        {"form": form, "master_missing": False, "master": master},
+        {"form": form},
     )
 
 @login_required
@@ -297,6 +314,8 @@ def inspection_scope(request, pk):
 
         action = request.POST.get("action", "")
         try:
+            if action in {"add_branch", "add_spec", "add_item"} and inspection.master_version_id is None:
+                raise ValidationError("هذه الزيارة بدأت دون مرجع مصدر؛ أضف محتوى محليًا من مساحة التحضير.")
             if action == "add_branch":
                 source = get_object_or_404(
                     StructureNode,
