@@ -36,6 +36,7 @@
             {% if row.snapshot.scope_state == "ACTIVE" %}
               {% if row.snapshot.scope_role == "CONTEXT" %}<span class="badge scope-badge-context">سياق بنيوي</span>{% else %}<span class="badge">ضمن النطاق</span>{% endif %}
             {% else %}<span class="badge scope-badge-excluded">مستبعد ومحفوظ</span>{% endif %}
+            {% if row.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
             {% if row.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
           {% else %}<span class="hint">غير مضاف</span>{% endif %}
         </div>
@@ -58,7 +59,12 @@
       {% for entry in row.specifications %}
       <div class="scope-entry">
         <div><strong>{{ entry.definition.title }}</strong>{% if entry.definition.help_text %}<small class="hint">{{ entry.definition.help_text }}</small>{% endif %}
-          {% if entry.snapshot %}<span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>{% endif %}
+          {% if entry.snapshot %}
+            <span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>
+            {% if entry.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if entry.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if entry.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          {% endif %}
         </div>
         {% if can_edit %}<div>
           {% if entry.snapshot and entry.snapshot.scope_state == "ACTIVE" %}{% if not entry.snapshot.scope_locked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="exclude_spec"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">إخراج</button></form>{% endif %}
@@ -75,7 +81,12 @@
       {% for entry in row.items %}
       <div class="scope-entry">
         <div><strong>{{ entry.definition.title }}</strong>{% if entry.definition.guidance %}<small class="hint">{{ entry.definition.guidance }}</small>{% endif %}
-          {% if entry.snapshot %}<span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>{% endif %}
+          {% if entry.snapshot %}
+            <span class="scope-entry-state {% if entry.snapshot.scope_state != 'ACTIVE' %}excluded{% endif %}">{% if entry.snapshot.scope_state == "ACTIVE" %}ضمن النطاق{% else %}مستبعد ومحفوظ{% endif %}</span>
+            {% if entry.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if entry.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if entry.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          {% endif %}
         </div>
         {% if can_edit %}<div>
           {% if entry.snapshot and entry.snapshot.scope_state == "ACTIVE" %}{% if not entry.snapshot.scope_locked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="exclude_item"><input type="hidden" name="snapshot_id" value="{{ entry.snapshot.id }}"><button class="text-action" type="submit">إخراج</button></form>{% endif %}

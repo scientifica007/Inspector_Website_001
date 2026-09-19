@@ -1,22 +1,25 @@
-# INSPECTION EXPORT SCHEMA — v3
+# INSPECTION EXPORT SCHEMA — v4
 
 اسم المخطط:
 
-`inspection-export-v3`
+`inspection-export-v4`
 
 ## الهدف
 
-إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية الفعلية، بما في ذلك نطاق الزيارة ومرجع المصدر التاريخي دون الاعتماد على بقاء المرجع في المكتبة.
+إخراج نسخة منظمة من الزيارة تمثل الحقيقة التشغيلية والتاريخية الفعلية، بما في ذلك:
+- نطاق الزيارة؛
+- مرجع المصدر التاريخي؛
+- التكليفات الرسمية وتاريخ إصدارها/إلغائها.
 
 ## مصدر الحقيقة
 
-التصدير مبني على Inspection Snapshot المثبتة للزيارة. تعديل المرجع المصدر أو حذفه لاحقًا لا يعيد تفسير الزيارة.
+التصدير مبني على Inspection Snapshots المثبتة للزيارة. تعديل المرجع المصدر أو حذفه لاحقًا لا يعيد تفسير الزيارة.
 
 ## المستوى الأعلى
 
 ```json
 {
-  "schema": "inspection-export-v3",
+  "schema": "inspection-export-v4",
   "inspection": {}
 }
 ```
@@ -26,47 +29,56 @@
 يتضمن:
 - `id`
 - `visit_date`
-- `status`: DRAFT | COMPLETED
+- `status`
 - `scope_mode`
 - `institution`
 - `inspector`
 - `reference`
 - `general_observations`
 - `general_recommendations`
+- `assignments`
 - `nodes`
 
 ## reference
 
-```json
-{
-  "id": 12,
-  "name": "مرجع زيارة بيداغوجية"
-}
-```
+`id` هو معرّف المرجع الأصلي إذا كان ما يزال موجودًا، و`name` هو Snapshot لاسمه عند إنشاء الزيارة. اللقطة الداخلية المجمدة لا تُعرض كهوية Business.
 
-يمثل `id` معرّف المرجع الأصلي الذي اختاره المفتش، وليس معرّف اللقطة الداخلية المجمدة. قد يصبح فارغًا إذا حُذف المصدر أو بدأت الزيارة دون مرجع، بينما يبقى `name` Snapshot للاسم عند إنشاء الزيارة إن كان هناك مصدر. اللقطة الداخلية لا تُعرّض كهوية Business في التصدير.
+## assignments
 
-## scope_mode
+قائمة سجل التكليفات المرتبطة بالزيارة. كل عنصر يتضمن:
+- id
+- title / description
+- status: DRAFT | ISSUED | REVOKED
+- created_by
+- issued_by / issued_at
+- revoked_by / revoked_at / revocation_reason
+- entries
 
-- `LEGACY_FULL`: زيارة تاريخية أُنشئت بالنموذج السابق الكامل.
-- `SELECTIVE`: زيارة تعمل بنطاق انتقائي.
+كل Entry يتضمن:
+- entry_type
+- stable_id
+- label
+- scope_locked
+- completion_required
+- sort_order
+
+وجود Assignment في التاريخ لا يعني أن قيوده ما تزال فعالة؛ الحالة الفعالة تظهر أيضًا في Scope metadata لكل Snapshot.
 
 ## nodes
 
-قائمة Recursive. كل Node يتضمن Snapshot ID، Stable ID للمصدر إن بقي موجودًا، العنوان والوصف، `inspectable` التاريخية، وScope metadata والأوصاف والبنود والمعاينات والتوصيات والأبناء.
+كل Node يتضمن Snapshot ID وStable ID للمصدر إن بقي، العنوان والوصف وinspectable وScope metadata والأوصاف والبنود والبيانات الميدانية والأبناء.
 
-## Local content وGovernance trace
+Scope metadata تتضمن:
+- origin
+- state
+- locked
+- role عند Node
+- completion_required عند الوصف والبند
 
-`scope.origin = "LOCAL"` يحدد المحتوى المحلي. الإضافات الجديدة داخل الزيارة لا تولد Proposal تلقائيًا.
+## Local governance history
 
-في الزيارات التاريخية التي سبق أن ارتبط محتواها المحلي بـProposal قد يبقى أثر Proposal في التصدير حفاظًا على التاريخ. أما التعميم في A-C3.2 فيتم عبر `ReferenceSubmission` مستقلة على مستوى المرجع الخاص، ولا تدخل ReferenceSubmission في Export الزيارة.
-
-## الحذف
-
-حذف المرجع أو تعريفاته من المكتبة لا يحذف Snapshot الموجودة داخل الزيارة. عند حذف المصدر قد تصبح `source_stable_id` فارغة، لكن العنوان والبيانات التشغيلية التاريخية تبقى في Snapshot.
+الإضافات الجديدة داخل الزيارة لا تولد Proposal تلقائيًا. في الزيارات التاريخية قد يبقى Proposal trace القديم حفاظًا على التاريخ.
 
 ## الترتيب وEncoding
 
-Nodes والأوصاف والبنود تخرج حسب ترتيب Snapshot ثم ID كفاصل ثابت. لا يوجد `exported_at` للمحافظة على Determinism.
-
-الاستجابة JSON UTF-8 مع `ensure_ascii=false`، ولا تتضمن كلمات مرور أو Sessions أو Tokens أو أسرار اتصال.
+لا يوجد `exported_at` للمحافظة على Determinism. JSON UTF-8 ولا يحتوي أسرار اتصال أو Sessions أو Tokens.

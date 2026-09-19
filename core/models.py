@@ -37,6 +37,18 @@ class GuideEntryType(models.TextChoices):
     ITEM = "ITEM", "بند"
 
 
+class AssignmentStatus(models.TextChoices):
+    DRAFT = "DRAFT", "مسودة تكليف"
+    ISSUED = "ISSUED", "صادر"
+    REVOKED = "REVOKED", "ملغى"
+
+
+class AssignmentEntryType(models.TextChoices):
+    BRANCH = "BRANCH", "فرع كامل"
+    SPECIFICATION = "SPECIFICATION", "وصف"
+    ITEM = "ITEM", "بند"
+
+
 class ReferenceSubmissionStatus(models.TextChoices):
     PENDING = "PENDING", "قيد المراجعة"
     APPROVED = "APPROVED", "معتمد"
@@ -245,6 +257,7 @@ class InspectionNode(models.Model):
         default=ScopeRole.SELECTED,
     )
     scope_locked = models.BooleanField(default=False)
+    base_scope_locked = models.BooleanField(default=False)
     additional_observations = models.TextField(blank=True)
     recommendations = models.TextField(blank=True)
 
@@ -282,7 +295,9 @@ class SpecificationValue(models.Model):
         default=ScopeState.ACTIVE,
     )
     scope_locked = models.BooleanField(default=False)
+    base_scope_locked = models.BooleanField(default=False)
     completion_required = models.BooleanField(default=False)
+    base_completion_required = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
@@ -312,7 +327,9 @@ class InspectionItemResult(models.Model):
         default=ScopeState.ACTIVE,
     )
     scope_locked = models.BooleanField(default=False)
+    base_scope_locked = models.BooleanField(default=False)
     completion_required = models.BooleanField(default=False)
+    base_completion_required = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
@@ -472,5 +489,142 @@ class GuideApplication(models.Model):
                 fields=["inspection", "guide"],
                 condition=models.Q(guide__isnull=False),
                 name="uq_inspection_guide_application",
+            ),
+        ]
+
+
+class Assignment(models.Model):
+    inspection = models.ForeignKey(
+        Inspection,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=AssignmentStatus.choices,
+        default=AssignmentStatus.DRAFT,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assignments_created",
+    )
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assignments_issued",
+    )
+    issued_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assignments_revoked",
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revocation_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return self.title
+
+
+class AssignmentEntry(models.Model):
+    assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    entry_type = models.CharField(
+        max_length=20,
+        choices=AssignmentEntryType.choices,
+    )
+    stable_id = models.UUIDField()
+    label_snapshot = models.CharField(max_length=500)
+    scope_locked = models.BooleanField(default=False)
+    completion_required = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["assignment", "entry_type", "stable_id"],
+                name="uq_assignment_entry_target",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(scope_locked=True)
+                | models.Q(completion_required=True),
+                name="ck_assignment_entry_has_obligation",
+            ),
+        ]
+
+
+class AssignmentEffect(models.Model):
+    assignment_entry = models.ForeignKey(
+        AssignmentEntry,
+        on_delete=models.CASCADE,
+        related_name="effects",
+    )
+    node = models.ForeignKey(
+        InspectionNode,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="assignment_effects",
+    )
+    specification = models.ForeignKey(
+        SpecificationValue,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="assignment_effects",
+    )
+    item = models.ForeignKey(
+        InspectionItemResult,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="assignment_effects",
+    )
+    scope_locked = models.BooleanField(default=False)
+    completion_required = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(node__isnull=False, specification__isnull=True, item__isnull=True)
+                    | models.Q(node__isnull=True, specification__isnull=False, item__isnull=True)
+                    | models.Q(node__isnull=True, specification__isnull=True, item__isnull=False)
+                ),
+                name="ck_assignment_effect_one_target",
+            ),
+            models.UniqueConstraint(
+                fields=["assignment_entry", "node"],
+                condition=models.Q(node__isnull=False),
+                name="uq_assignment_effect_node",
+            ),
+            models.UniqueConstraint(
+                fields=["assignment_entry", "specification"],
+                condition=models.Q(specification__isnull=False),
+                name="uq_assignment_effect_spec",
+            ),
+            models.UniqueConstraint(
+                fields=["assignment_entry", "item"],
+                condition=models.Q(item__isnull=False),
+                name="uq_assignment_effect_item",
             ),
         ]

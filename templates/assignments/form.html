@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · Admin</p>
+    <h1>{{ title }}</h1>
+    <p class="hint">هذه مسودة إدارية فقط. لا يراها المفتش ولا تُطبق أي قيود حتى إصدار التكليف صراحة.</p>
+  </div>
+  <a class="secondary button-link" href="{% if assignment %}{% url 'assignment_detail' assignment.pk %}{% else %}{% url 'inspection_assignments' inspection.pk %}{% endif %}">إلغاء</a>
+</section>
+<section class="card narrow-form">
+  <form method="post" class="stack-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label>{{ field.label }} {{ field }} {{ field.errors }}</label>
+    {% endfor %}
+    <button class="primary" type="submit">حفظ المسودة</button>
+  </form>
+</section>
+{% endblock %}

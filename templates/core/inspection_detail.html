@@ -10,6 +10,7 @@
   <div class="actions">
     <a class="secondary button-link" href="{% url 'inspection_export' inspection.pk %}">تحميل JSON</a>
     <a class="secondary button-link" href="{% url 'inspection_general' inspection.pk %}">المعاينات العامة</a>
+    <a class="secondary button-link" href="{% url 'inspection_assignments' inspection.pk %}">التكليفات الرسمية</a>
     {% if can_edit %}
       <a class="primary button-link" href="{% url 'inspection_complete' inspection.pk %}">إنهاء الزيارة</a>
       <a class="danger-outline button-link" href="{% url 'inspection_delete' inspection.pk %}">حذف المسودة</a>

@@ -18,7 +18,13 @@
 <section class="page-head">
   <div>
     <p class="eyebrow">تنفيذ الزيارة</p>
-    <h1>{{ node.title_snapshot }} {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %} {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}</h1>
+    <h1>
+      {{ node.title_snapshot }}
+      {% if node.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+      {% if node.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+      {% if node.scope_role == "CONTEXT" %}<span class="local-badge">سياق</span>{% endif %}
+      {% if node.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+    </h1>
     {% if node.description_snapshot %}<p class="hint">{{ node.description_snapshot }}</p>{% endif %}
   </div>
   <a class="secondary button-link" href="{% url 'inspection_execute' inspection.pk %}">العودة إلى التنفيذ</a>
@@ -41,6 +47,9 @@
         <label for="{{ block.field.id_for_label }}">
           {{ block.field.label }}
           {% if block.snapshot.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+          {% if block.snapshot.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+          {% if block.snapshot.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+          {% if block.snapshot.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
         </label>
         {{ block.field }}
         {% if block.field.help_text %}<small class="hint">{{ block.field.help_text }}</small>{% endif %}
@@ -58,7 +67,13 @@
       {% for block in item_blocks %}
       <article class="inspection-item">
         <div class="item-heading">
-          <strong>{{ block.result.title_snapshot }} {% if block.result.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}</strong>
+          <strong>
+            {{ block.result.title_snapshot }}
+            {% if block.result.scope_origin == "LOCAL" %}<span class="local-badge">محلي</span>{% endif %}
+            {% if block.result.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+            {% if block.result.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+            {% if block.result.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+          </strong>
           {% if block.result.guidance_snapshot %}<small class="hint">{{ block.result.guidance_snapshot }}</small>{% endif %}
         </div>
         <div class="item-controls">
@@ -114,7 +129,11 @@
   <h2>الفروع التابعة</h2>
   <div class="child-links">
     {% for child in children %}
-      <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk child.pk %}">{{ child.title_snapshot }}</a>
+      <a class="secondary button-link" href="{% url 'inspection_node' inspection.pk child.pk %}">
+        {{ child.title_snapshot }}
+        {% if child.scope_origin == "ASSIGNMENT" %}<span class="badge">تكليف</span>{% endif %}
+        {% if child.scope_locked %}<span class="badge scope-badge-locked">مقيد</span>{% endif %}
+      </a>
     {% endfor %}
   </div>
 </section>

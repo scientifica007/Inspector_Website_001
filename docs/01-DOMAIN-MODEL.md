@@ -234,3 +234,53 @@ Guide كيان توصية اختياري مرتبط بـReference SHARED واح�
 القيد الفريد Inspection + Guide يجعل التطبيق idempotent.
 
 GuideApplication سجل تطبيق، وليس مصدر الحقيقة لمحتوى الزيارة؛ محتوى الزيارة يبقى في Inspection Snapshots نفسها.
+
+
+---
+
+## 17. Assignment
+
+Assignment تكليف رسمي مرتبط بزيارة واحدة.
+
+الحالات:
+- DRAFT
+- ISSUED
+- REVOKED
+
+يحفظ:
+- inspection
+- title / description
+- created_by
+- issued_by / issued_at
+- revoked_by / revoked_at / revocation_reason
+
+## 18. AssignmentEntry
+
+يستهدف عنصرًا في Reference SNAPSHOT المجمدة للزيارة بواسطة:
+- entry_type: BRANCH | SPECIFICATION | ITEM
+- stable_id
+- label_snapshot
+- scope_locked
+- completion_required
+- sort_order
+
+يلزم أن يكون واحد على الأقل من `scope_locked` أو `completion_required` مفعّلًا.
+
+## 19. AssignmentEffect
+
+هو سجل Provenance للالتزام بعد إصدار Assignment.
+
+كل Effect يرتبط بواحد فقط من:
+- InspectionNode؛
+- SpecificationValue؛
+- InspectionItemResult.
+
+ويحفظ ما إذا كان ذلك AssignmentEntry يفرض:
+- scope_locked؛
+- completion_required.
+
+لا تعتمد عملية الإلغاء على قلب Boolean مباشرة. الحالة الفعالة تُعاد حسابها من:
+- base_scope_locked / base_completion_required؛
+- Effects التابعة لتكليفات ISSUED.
+
+بهذا لا يؤدي إلغاء تكليف إلى إزالة قيد تاريخي أو قيد من تكليف آخر.

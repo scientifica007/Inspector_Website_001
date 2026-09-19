@@ -1,5 +1,5 @@
 from django.urls import path
-from . import builder_views, export_views, governance_views, guide_views, local_views, reference_views, views
+from . import assignment_views, builder_views, export_views, governance_views, guide_views, local_views, reference_views, views
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -25,6 +25,15 @@ urlpatterns = [
     path("inspections/<int:pk>/", views.inspection_detail, name="inspection_detail"),
     path("inspections/<int:pk>/delete/", views.inspection_delete, name="inspection_delete"),
     path("inspections/<int:pk>/guides/", guide_views.inspection_guides, name="inspection_guides"),
+    path("inspections/<int:inspection_pk>/assignments/", assignment_views.inspection_assignments, name="inspection_assignments"),
+    path("inspections/<int:inspection_pk>/assignments/new/", assignment_views.assignment_create, name="assignment_create"),
+    path("assignments/<int:pk>/", assignment_views.assignment_detail, name="assignment_detail"),
+    path("assignments/<int:pk>/edit/", assignment_views.assignment_edit, name="assignment_edit"),
+    path("assignments/<int:pk>/delete/", assignment_views.assignment_delete, name="assignment_delete"),
+    path("assignments/<int:pk>/issue/", assignment_views.assignment_issue, name="assignment_issue"),
+    path("assignments/<int:pk>/revoke/", assignment_views.assignment_revoke, name="assignment_revoke"),
+    path("assignments/<int:pk>/entries/add/", assignment_views.assignment_entry_add, name="assignment_entry_add"),
+    path("assignments/<int:pk>/entries/<int:entry_pk>/delete/", assignment_views.assignment_entry_delete, name="assignment_entry_delete"),
     path("inspections/<int:pk>/guides/<int:guide_pk>/apply/", guide_views.apply_inspection_guide, name="apply_inspection_guide"),
     path("inspections/<int:pk>/prepare/", views.inspection_prepare, name="inspection_prepare"),
     path("inspections/<int:pk>/execute/", views.inspection_execute, name="inspection_execute"),

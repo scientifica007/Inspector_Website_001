@@ -43,6 +43,20 @@
 - Added `InspectionNode.inspectable_snapshot` so visit-local semantics no longer depend on legacy Proposal payloads.
 - Legacy NODE/DESCRIPTION/ITEM Proposal records remain stored for history but are hidden from the active Admin inbox and cannot be approved through the A-C3 flow.
 
+### C-ASSIGN-01 — Required Visit Assignments
+- Added explicit formal Assignments bound to an existing DRAFT inspection.
+- Assignment entries target frozen-reference Branch/Description/Item stable IDs and require at least one explicit obligation.
+- `scope_locked` and `completion_required` remain independent.
+- Assignment issue is atomic: every entry is preflighted before any scope mutation.
+- New assignment-created scope uses `origin=ASSIGNMENT`; overlapping existing MANUAL/GUIDE content retains its prior origin.
+- Added AssignmentEffect provenance so overlapping assignments can be revoked without clearing obligations still required elsewhere.
+- Added baseline constraint fields and a preservation migration so pre-existing locks/requirements survive future assignment revocation.
+- Revocation is allowed only while the inspection is DRAFT, requires a reason, keeps all visit data, and recomputes effective obligations.
+- COMPLETED inspections accept neither new issue nor revocation.
+- Inspectors see issued/revoked assignments but not Admin assignment drafts.
+- Export advances to `inspection-export-v4` and includes assignment audit history.
+- Migration `0010_assignments` is additive and backfills only baseline metadata from existing constraint booleans.
+
 ### B-GUIDE-01 — Optional Reusable Guides
 - Added reusable Admin-authored Guides bound to one SHARED reference.
 - Guide entries target a full branch, one description or one checklist item by stable logical ID.

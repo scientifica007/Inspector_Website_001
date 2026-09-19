@@ -150,3 +150,23 @@ Status: **ADOPTED**
 - Missing targets are skipped and counted; the frozen source is never refreshed implicitly.
 - GuideApplication preserves application-time Guide metadata.
 - Required/locked semantics remain exclusively in Stage C Assignments.
+
+
+## 15. C-ASSIGN-01 implementation contract
+
+Status: **ADOPTED**
+
+- Assignment is a formal obligation bound to one existing DRAFT inspection.
+- No LOCKED visit mode is introduced.
+- Admin drafts the assignment before issue; draft assignments are invisible to the inspector.
+- Targets resolve against the inspection's frozen reference by Stable ID.
+- Each entry requires scope_locked and/or completion_required.
+- Issue is atomic after full preflight.
+- New scope receives ASSIGNMENT origin; existing scope retains existing provenance.
+- Branch locking applies to branch structure and contained descriptions/items.
+- Branch completion requirements apply to descriptions/items, not to node notes.
+- AssignmentEffect records obligation provenance.
+- Effective constraints preserve baseline historical constraints and all still-issued overlapping assignments.
+- Revocation requires a reason, is DRAFT-only, preserves visit data and recomputes effective constraints.
+- COMPLETED visits are immutable: no issue or revocation.
+- Export audit contract advances to inspection-export-v4.

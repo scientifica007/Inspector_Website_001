@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">{{ inspection.institution.name }} · تكليف رسمي</p>
+    <h1>{{ assignment.title }}</h1>
+    <div class="prepare-node-meta">
+      <span class="badge">{{ assignment.get_status_display }}</span>
+      {% if assignment.issued_at %}<span class="hint">صدر: {{ assignment.issued_at }}{% if assignment.issued_by %} · بواسطة {{ assignment.issued_by.username }}{% endif %}</span>{% endif %}
+      {% if assignment.revoked_at %}<span class="hint">ألغي: {{ assignment.revoked_at }}{% if assignment.revoked_by %} · بواسطة {{ assignment.revoked_by.username }}{% endif %}</span>{% endif %}
+    </div>
+    {% if assignment.description %}<p class="hint">{{ assignment.description }}</p>{% endif %}
+  </div>
+  <div class="actions">
+    <a class="secondary button-link" href="{% url 'inspection_assignments' inspection.pk %}">كل التكليفات</a>
+    {% if can_manage_draft %}
+      <a class="secondary button-link" href="{% url 'assignment_edit' assignment.pk %}">تعديل العنوان</a>
+    {% endif %}
+  </div>
+</section>
+
+{% if assignment.status == "REVOKED" %}
+<section class="readonly-banner" role="status">
+  هذا التكليف ملغى. سبب الإلغاء: {{ assignment.revocation_reason }}
+</section>
+{% elif assignment.status == "ISSUED" %}
+<section class="readonly-banner" role="status">
+  هذا التكليف صادر. «مقيد» يمنع الإخراج من النطاق، و«مطلوب للإكمال» يمنع تثبيت الزيارة قبل الحسم.
+</section>
+{% elif can_manage_draft %}
+<section class="readonly-banner" role="status">
+  مسودة إدارية: لا تؤثر على زيارة المفتش حتى الضغط على «إصدار التكليف».
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="section-title">
+    <h2>عناصر التكليف</h2>
+    <span class="hint">{{ entries|length }} عنصرًا</span>
+  </div>
+  {% for entry in entries %}
+    <div class="prepare-list-row">
+      <div>
+        <strong>{{ entry.label_snapshot }}</strong>
+        <div class="prepare-node-meta">
+          <span class="hint">{{ entry.get_entry_type_display }}</span>
+          {% if entry.scope_locked %}<span class="badge scope-badge-locked">مقيد في النطاق</span>{% endif %}
+          {% if entry.completion_required %}<span class="badge">مطلوب للإكمال</span>{% endif %}
+        </div>
+      </div>
+      {% if can_manage_draft %}
+      <form method="post" action="{% url 'assignment_entry_delete' assignment.pk entry.pk %}">
+        {% csrf_token %}
+        <button class="text-action danger-text" type="submit">إزالة</button>
+      </form>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="hint">لا توجد عناصر تكليف بعد.</p>
+  {% endfor %}
+</section>
+
+{% if can_manage_draft %}
+<section class="card">
+  <div class="section-title">
+    <h2>إضافة التزام من لقطة الزيارة المجمدة</h2>
+    <span class="hint">يجب اختيار «مقيد» أو «مطلوب للإكمال» على الأقل.</span>
+  </div>
+
+  {% for node, depth in tree %}
+  <article class="scope-node" style="--depth:{{ depth }}">
+    <div class="scope-node-head">
+      <div>
+        <strong>{{ node.title }}</strong>
+        {% if node.description %}<small class="hint">{{ node.description }}</small>{% endif %}
+      </div>
+      <form method="post" action="{% url 'assignment_entry_add' assignment.pk %}" class="assignment-entry-form">
+        {% csrf_token %}
+        <input type="hidden" name="entry_type" value="BRANCH">
+        <input type="hidden" name="target_id" value="{{ node.pk }}">
+        <label><input type="checkbox" name="scope_locked" value="on"> مقيد</label>
+        <label><input type="checkbox" name="completion_required" value="on"> مطلوب للإكمال</label>
+        <button class="secondary" type="submit">{% if node.stable_id|stringformat:"s" in branch_ids %}تحديث التزام الفرع{% else %}+ الفرع{% endif %}</button>
+      </form>
+    </div>
+
+    {% if node.specifications.all %}
+    <div class="scope-group">
+      <h3>الأوصاف</h3>
+      {% for spec in node.specifications.all %}{% if spec.active %}
+      <div class="scope-entry">
+        <span>{{ spec.title }}</span>
+        <form method="post" action="{% url 'assignment_entry_add' assignment.pk %}" class="assignment-entry-form">
+          {% csrf_token %}
+          <input type="hidden" name="entry_type" value="SPECIFICATION">
+          <input type="hidden" name="target_id" value="{{ spec.pk }}">
+          <label><input type="checkbox" name="scope_locked" value="on"> مقيد</label>
+          <label><input type="checkbox" name="completion_required" value="on"> مطلوب للإكمال</label>
+          <button class="text-action" type="submit">{% if spec.stable_id|stringformat:"s" in spec_ids %}تحديث{% else %}+ إضافة{% endif %}</button>
+        </form>
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if node.items.all %}
+    <div class="scope-group">
+      <h3>البنود</h3>
+      {% for item in node.items.all %}{% if item.active %}
+      <div class="scope-entry">
+        <span>{{ item.title }}</span>
+        <form method="post" action="{% url 'assignment_entry_add' assignment.pk %}" class="assignment-entry-form">
+          {% csrf_token %}
+          <input type="hidden" name="entry_type" value="ITEM">
+          <input type="hidden" name="target_id" value="{{ item.pk }}">
+          <label><input type="checkbox" name="scope_locked" value="on"> مقيد</label>
+          <label><input type="checkbox" name="completion_required" value="on"> مطلوب للإكمال</label>
+          <button class="text-action" type="submit">{% if item.stable_id|stringformat:"s" in item_ids %}تحديث{% else %}+ إضافة{% endif %}</button>
+        </form>
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+  </article>
+  {% empty %}
+    <p>لا تحتوي لقطة الزيارة على عناصر نشطة.</p>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>إصدار التكليف</h2>
+  <p class="hint">الإصدار يطبق كل الالتزامات دفعة واحدة. إذا تعذر عنصر واحد فلن يصدر نصف تكليف.</p>
+  <form method="post" action="{% url 'assignment_issue' assignment.pk %}">
+    {% csrf_token %}
+    <button class="primary" type="submit">إصدار التكليف</button>
+  </form>
+</section>
+
+<section class="card danger-zone">
+  <h2>حذف المسودة</h2>
+  <form method="post" action="{% url 'assignment_delete' assignment.pk %}">
+    {% csrf_token %}
+    <button class="danger-outline" type="submit">حذف مسودة التكليف</button>
+  </form>
+</section>
+{% endif %}
+
+{% if can_revoke %}
+<section class="card danger-zone">
+  <h2>إلغاء التكليف</h2>
+  <p class="hint">الإلغاء لا يحذف أي بيانات ميدانية، ويعيد حساب القيود التي تبقى مفروضة من تكليفات أخرى أو من baseline تاريخي.</p>
+  <form method="post" action="{% url 'assignment_revoke' assignment.pk %}" class="stack-form">
+    {% csrf_token %}
+    <label>{{ revocation_form.reason.label }} {{ revocation_form.reason }}</label>
+    <button class="danger-outline" type="submit">إلغاء التكليف</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

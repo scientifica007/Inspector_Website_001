@@ -155,3 +155,23 @@ NOT_APPLICABLE محسومة للـProgress وتستبعد من Compliance denomi
 - تعديل/حذف Guide بعد التطبيق لا يغير الزيارة.
 - حذف المرجع المصدر يحذف Guides التابعة له من المكتبة، ولا يحذف آثارها في الزيارات السابقة.
 - القيود والإلزام تبقى لـStage C Assignments ولا تُخلط مع Guides.
+
+
+## D-022 — C-ASSIGN-01 / التكليف الرسمي مصدر الإلزام
+**قرار:** Assignment ليس Guide مقيدًا ولا Visit Mode. هو تكليف رسمي صريح مرتبط بزيارة DRAFT محددة، وهو المصدر المنظم للقيود والإلزامات في Stage C.
+
+**القواعد:**
+- Admin ينشئ مسودة Assignment على Inspection موجودة لها Reference SNAPSHOT مجمدة.
+- مسودة التكليف لا تظهر للمفتش ولا تؤثر على نطاقه.
+- AssignmentEntry يستهدف BRANCH أو SPECIFICATION أو ITEM بواسطة Stable ID داخل اللقطة المجمدة.
+- كل Entry يجب أن يحمل واحدًا على الأقل من: `scope_locked` أو `completion_required`.
+- الإصدار عملية Atomic: Preflight لكل Entries ثم تطبيق الجميع أو لا شيء.
+- المحتوى الجديد الناتج عن التكليف يأخذ `scope_origin=ASSIGNMENT`.
+- المحتوى الموجود مسبقًا يحتفظ بـorigin السابق؛ التكليف يضيف obligation ولا يعيد كتابة provenance.
+- Branch مع `scope_locked` يقيد بنية الفرع ومحتواه؛ Branch مع `completion_required` يفرض الإكمال على الأوصاف والبنود فقط.
+- AssignmentEffect يسجل مصدر كل obligation فعلي.
+- القيد الفعلي = baseline التاريخي OR أي AssignmentEffect من Assignment حالته ISSUED.
+- إلغاء Assignment متاح فقط أثناء DRAFT، ويتطلب سببًا، ولا يحذف Snapshot أو قيمة أو نتيجة.
+- إذا بقي Assignment آخر يفرض الالتزام نفسه يبقى القيد قائمًا.
+- بعد COMPLETED لا إصدار جديد ولا إلغاء ولا إعادة تفسير للتاريخ.
+- Assignment Templates أو إنشاء زيارة من تكليف خارج نطاق C-ASSIGN-01.

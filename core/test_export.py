@@ -93,7 +93,7 @@ class ExportTests(TestCase):
         first = build_inspection_export(self.inspection)
         second = build_inspection_export(self.inspection)
         self.assertEqual(first, second)
-        self.assertEqual(first["schema"], "inspection-export-v3")
+        self.assertEqual(first["schema"], "inspection-export-v4")
         payload = first["inspection"]
         self.assertEqual(payload["institution"]["name"], "مؤسسة تجريبية عربية")
         self.assertEqual(payload["inspector"]["username"], "export-inspector")

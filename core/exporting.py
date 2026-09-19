@@ -1,4 +1,4 @@
-EXPORT_SCHEMA = "inspection-export-v3"
+EXPORT_SCHEMA = "inspection-export-v4"
 
 from .models import ProposalType, ScopeOrigin
 
@@ -31,6 +31,64 @@ def _scope_payload(entry, *, include_role=False, include_completion=False):
     if include_completion:
         payload["completion_required"] = entry.completion_required
     return payload
+
+def _assignment_payloads(inspection):
+    payloads = []
+    assignments = inspection.assignments.prefetch_related("entries").select_related(
+        "created_by",
+        "issued_by",
+        "revoked_by",
+    ).order_by("created_at", "id")
+    for assignment in assignments:
+        payloads.append(
+            {
+                "id": assignment.id,
+                "title": assignment.title,
+                "description": assignment.description,
+                "status": assignment.status,
+                "created_by": (
+                    assignment.created_by.username
+                    if assignment.created_by_id
+                    else None
+                ),
+                "issued_by": (
+                    assignment.issued_by.username
+                    if assignment.issued_by_id
+                    else None
+                ),
+                "issued_at": (
+                    assignment.issued_at.isoformat()
+                    if assignment.issued_at
+                    else None
+                ),
+                "revoked_by": (
+                    assignment.revoked_by.username
+                    if assignment.revoked_by_id
+                    else None
+                ),
+                "revoked_at": (
+                    assignment.revoked_at.isoformat()
+                    if assignment.revoked_at
+                    else None
+                ),
+                "revocation_reason": assignment.revocation_reason,
+                "entries": [
+                    {
+                        "entry_type": entry.entry_type,
+                        "stable_id": str(entry.stable_id),
+                        "label": entry.label_snapshot,
+                        "scope_locked": entry.scope_locked,
+                        "completion_required": entry.completion_required,
+                        "sort_order": entry.sort_order,
+                    }
+                    for entry in assignment.entries.all().order_by(
+                        "sort_order", "id"
+                    )
+                ],
+            }
+        )
+    return payloads
+
 
 def build_inspection_export(inspection):
     proposal_index = _proposal_index(inspection)
@@ -134,6 +192,7 @@ def build_inspection_export(inspection):
             },
             "general_observations": inspection.general_observations,
             "general_recommendations": inspection.general_recommendations,
+            "assignments": _assignment_payloads(inspection),
             "nodes": [node_payload(node) for node in children.get(None, [])],
         },
     }

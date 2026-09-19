@@ -307,6 +307,11 @@ def _activate_snapshot_node(
                 scope_state=ScopeState.ACTIVE,
                 scope_role=desired_role,
                 scope_locked=locked if is_target else False,
+                base_scope_locked=(
+                    locked
+                    if is_target and origin != ScopeOrigin.ASSIGNMENT
+                    else False
+                ),
             )
         else:
             updates = []
@@ -326,6 +331,14 @@ def _activate_snapshot_node(
             if is_target and locked and not snapshot.scope_locked:
                 snapshot.scope_locked = True
                 updates.append("scope_locked")
+            if (
+                is_target
+                and locked
+                and origin != ScopeOrigin.ASSIGNMENT
+                and not snapshot.base_scope_locked
+            ):
+                snapshot.base_scope_locked = True
+                updates.append("base_scope_locked")
             if is_target and snapshot.scope_origin != origin and (
                 reactivated or desired_role == ScopeRole.SELECTED
             ):
@@ -395,7 +408,15 @@ def add_scope_specification(
             scope_origin=origin,
             scope_state=ScopeState.ACTIVE,
             scope_locked=locked,
+            base_scope_locked=(
+                locked if origin != ScopeOrigin.ASSIGNMENT else False
+            ),
             completion_required=completion_required,
+            base_completion_required=(
+                completion_required
+                if origin != ScopeOrigin.ASSIGNMENT
+                else False
+            ),
         )
     else:
         updates = []
@@ -406,9 +427,23 @@ def add_scope_specification(
         if locked and not value.scope_locked:
             value.scope_locked = True
             updates.append("scope_locked")
+        if (
+            locked
+            and origin != ScopeOrigin.ASSIGNMENT
+            and not value.base_scope_locked
+        ):
+            value.base_scope_locked = True
+            updates.append("base_scope_locked")
         if completion_required and not value.completion_required:
             value.completion_required = True
             updates.append("completion_required")
+        if (
+            completion_required
+            and origin != ScopeOrigin.ASSIGNMENT
+            and not value.base_completion_required
+        ):
+            value.base_completion_required = True
+            updates.append("base_completion_required")
         if updates:
             value.save(update_fields=list(dict.fromkeys(updates)))
 
@@ -449,7 +484,15 @@ def add_scope_item(
             scope_origin=origin,
             scope_state=ScopeState.ACTIVE,
             scope_locked=locked,
+            base_scope_locked=(
+                locked if origin != ScopeOrigin.ASSIGNMENT else False
+            ),
             completion_required=completion_required,
+            base_completion_required=(
+                completion_required
+                if origin != ScopeOrigin.ASSIGNMENT
+                else False
+            ),
         )
     else:
         updates = []
@@ -460,9 +503,23 @@ def add_scope_item(
         if locked and not result.scope_locked:
             result.scope_locked = True
             updates.append("scope_locked")
+        if (
+            locked
+            and origin != ScopeOrigin.ASSIGNMENT
+            and not result.base_scope_locked
+        ):
+            result.base_scope_locked = True
+            updates.append("base_scope_locked")
         if completion_required and not result.completion_required:
             result.completion_required = True
             updates.append("completion_required")
+        if (
+            completion_required
+            and origin != ScopeOrigin.ASSIGNMENT
+            and not result.base_completion_required
+        ):
+            result.base_completion_required = True
+            updates.append("base_completion_required")
         if updates:
             result.save(update_fields=list(dict.fromkeys(updates)))
 
